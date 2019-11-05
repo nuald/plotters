@@ -173,6 +173,9 @@ pub use candlestick::CandleStick;
 mod errorbar;
 pub use errorbar::{ErrorBar, ErrorBarOrientH, ErrorBarOrientV};
 
+mod boxplot;
+pub use boxplot::Boxplot;
+
 mod image;
 pub use self::image::BitMapElement;
 
