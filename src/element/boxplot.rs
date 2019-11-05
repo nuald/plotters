@@ -48,20 +48,12 @@ pub trait BoxplotOrient<K, V> {
     type YType;
 
     fn make_coord(key: K, val: V) -> (Self::XType, Self::YType);
+    fn with_offset(coord: BackendCoord, offset: f64) -> BackendCoord;
 }
-
-pub struct BoxplotOrientH<K, V>(PhantomData<(K, V)>);
 
 pub struct BoxplotOrientV<K, V>(PhantomData<(K, V)>);
 
-impl<K, V> BoxplotOrient<K, V> for BoxplotOrientH<K, V> {
-    type XType = V;
-    type YType = K;
-
-    fn make_coord(key: K, val: V) -> (V, K) {
-        (val, key)
-    }
-}
+pub struct BoxplotOrientH<K, V>(PhantomData<(K, V)>);
 
 impl<K, V> BoxplotOrient<K, V> for BoxplotOrientV<K, V> {
     type XType = K;
@@ -70,6 +62,23 @@ impl<K, V> BoxplotOrient<K, V> for BoxplotOrientV<K, V> {
     fn make_coord(key: K, val: V) -> (K, V) {
         (key, val)
     }
+
+    fn with_offset(coord: BackendCoord, offset: f64) -> BackendCoord {
+        (coord.0 + offset as i32, coord.1)
+    }
+}
+
+impl<K, V> BoxplotOrient<K, V> for BoxplotOrientH<K, V> {
+    type XType = V;
+    type YType = K;
+
+    fn make_coord(key: K, val: V) -> (V, K) {
+        (val, key)
+    }
+
+    fn with_offset(coord: BackendCoord, offset: f64) -> BackendCoord {
+        (coord.0, coord.1 + offset as i32)
+    }
 }
 
 /// The boxplot data point element
@@ -77,6 +86,7 @@ pub struct Boxplot<K, O: BoxplotOrient<K, f32>> {
     style: ShapeStyle,
     width: u32,
     whisker_width: f64,
+    offset: f64,
     key: K,
     values: [f32; 5],
     _p: PhantomData<O>,
@@ -88,20 +98,21 @@ impl<K: Clone> Boxplot<K, BoxplotOrientV<K, f32>> {
     /// ```rust
     /// use plotters::element::{Boxplot, PointCollection};
     ///
-    /// let plot = Boxplot::new_vertical("group", &[7, 15, 36, 39, 40, 41], 5);
+    /// let plot = Boxplot::new_vertical("group", &[7, 15, 36, 39, 40, 41]);
     /// let points = &plot.point_iter()[1..4];
     /// assert_eq!(points[0].1, 15.0, "lower quartile");
     /// assert_eq!(points[1].1, 37.5, "median");
     /// assert_eq!(points[2].1, 40.0, "upper quartile");
     /// ```
-    pub fn new_vertical<T>(key: K, data: &[T], width: u32) -> Self
+    pub fn new_vertical<T>(key: K, data: &[T]) -> Self
     where
         T: Into<f64> + Copy + PartialOrd,
     {
         Self {
             style: Into::<ShapeStyle>::into(&GREEN),
-            width,
+            width: 5,
             whisker_width: 1.0,
+            offset: 0.0,
             key,
             values: values(data),
             _p: PhantomData,
@@ -110,25 +121,26 @@ impl<K: Clone> Boxplot<K, BoxplotOrientV<K, f32>> {
 }
 
 impl<K: Clone> Boxplot<K, BoxplotOrientH<K, f32>> {
-    /// Create a new vertical boxplot element
+    /// Create a new horizontal boxplot element
     ///
     /// ```rust
     /// use plotters::element::{Boxplot, PointCollection};
     ///
-    /// let plot = Boxplot::new_vertical("group", &[7, 15, 36, 39, 40, 41], 5);
+    /// let plot = Boxplot::new_horizontal("group", &[7, 15, 36, 39, 40, 41]);
     /// let points = &plot.point_iter()[1..4];
-    /// assert_eq!(points[0].1, 15.0, "lower quartile");
-    /// assert_eq!(points[1].1, 37.5, "median");
-    /// assert_eq!(points[2].1, 40.0, "upper quartile");
+    /// assert_eq!(points[0].0, 15.0, "lower quartile");
+    /// assert_eq!(points[1].0, 37.5, "median");
+    /// assert_eq!(points[2].0, 40.0, "upper quartile");
     /// ```
-    pub fn new_horizontal<T>(key: K, data: &[T], width: u32) -> Self
+    pub fn new_horizontal<T>(key: K, data: &[T]) -> Self
     where
         T: Into<f64> + Copy + PartialOrd,
     {
         Self {
             style: Into::<ShapeStyle>::into(&GREEN),
-            width,
+            width: 5,
             whisker_width: 1.0,
+            offset: 0.0,
             key,
             values: values(data),
             _p: PhantomData,
@@ -143,9 +155,21 @@ impl<K, O: BoxplotOrient<K, f32>> Boxplot<K, O> {
         self
     }
 
+    /// Set the bar width
+    pub fn width(mut self, width: u32) -> Self {
+        self.width = width;
+        self
+    }
+
     /// Set the width of the whiskers as a fraction of the bar width
     pub fn whisker_width(mut self, whisker_width: f64) -> Self {
         self.whisker_width = whisker_width;
+        self
+    }
+
+    /// Set the element offset
+    pub fn offset<T: Into<f64> + Copy>(mut self, offset: T) -> Self {
+        self.offset = offset.into();
         self
     }
 }
@@ -173,41 +197,47 @@ impl<K, DB: DrawingBackend, O: BoxplotOrient<K, f32>> Drawable<DB> for Boxplot<K
         let points: Vec<_> = points.take(5).collect();
         if points.len() == 5 {
             let width = f64::from(self.width);
-            let to_x = |coord: BackendCoord, offset: f64| (coord.0 + offset as i32, coord.1);
-            let to_l = |coord| to_x(coord, -width / 2.0);
-            let to_r = |coord| to_x(coord, width / 2.0);
-            let to_l_whisker = |coord| to_x(coord, -width * self.whisker_width / 2.0);
-            let to_r_whisker = |coord| to_x(coord, width * self.whisker_width / 2.0);
+            let moved = |coord| O::with_offset(coord, self.offset);
+            let start_bar = |coord| O::with_offset(moved(coord), -width / 2.0);
+            let end_bar = |coord| O::with_offset(moved(coord), width / 2.0);
+            let start_whisker =
+                |coord| O::with_offset(moved(coord), -width * self.whisker_width / 2.0);
+            let end_whisker =
+                |coord| O::with_offset(moved(coord), width * self.whisker_width / 2.0);
 
             // |---[   |  ]----|
             // ^________________
             backend.draw_line(
-                to_l_whisker(points[0]),
-                to_r_whisker(points[0]),
+                start_whisker(points[0]),
+                end_whisker(points[0]),
                 &self.style.color,
             )?;
 
             // |---[   |  ]----|
             // _^^^_____________
-            backend.draw_line(points[0], points[1], &self.style.color)?;
+            backend.draw_line(moved(points[0]), moved(points[1]), &self.style.color)?;
 
             // |---[   |  ]----|
             // ____^______^_____
-            backend.draw_rect(to_l(points[3]), to_r(points[1]), &self.style.color, false)?;
+            let corner1 = start_bar(points[3]);
+            let corner2 = end_bar(points[1]);
+            let upper_left = (corner1.0.min(corner2.0), corner1.1.min(corner2.1));
+            let bottom_right = (corner1.0.max(corner2.0), corner1.1.max(corner2.1));
+            backend.draw_rect(upper_left, bottom_right, &self.style.color, false)?;
 
             // |---[   |  ]----|
             // ________^________
-            backend.draw_line(to_l(points[2]), to_r(points[2]), &self.style.color)?;
+            backend.draw_line(start_bar(points[2]), end_bar(points[2]), &self.style.color)?;
 
             // |---[   |  ]----|
             // ____________^^^^_
-            backend.draw_line(points[3], points[4], &self.style.color)?;
+            backend.draw_line(moved(points[3]), moved(points[4]), &self.style.color)?;
 
             // |---[   |  ]----|
             // ________________^
             backend.draw_line(
-                to_l_whisker(points[4]),
-                to_r_whisker(points[4]),
+                start_whisker(points[4]),
+                end_whisker(points[4]),
                 &self.style.color,
             )?;
         }
