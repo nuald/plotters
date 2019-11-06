@@ -3,6 +3,7 @@
 */
 
 /// The quartiles
+#[derive(Clone, Debug)]
 pub struct Quartiles {
     lower_fence: f64,
     lower: f64,
@@ -62,5 +63,9 @@ impl Quartiles {
             self.upper as f32,
             self.upper_fence as f32,
         ]
+    }
+
+    pub fn median(&self) -> f64 {
+        self.median
     }
 }

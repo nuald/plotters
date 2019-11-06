@@ -659,9 +659,9 @@ pub use palette;
 pub mod prelude {
     pub use crate::chart::{ChartBuilder, ChartContext, LabelAreaPosition, SeriesLabelPosition};
     pub use crate::coord::{
-        CoordTranslate, GroupBy, IntoCentric, IntoPartialAxis, LogCoord, LogRange, LogScalable,
-        Ranged, RangedCoord, RangedCoordf32, RangedCoordf64, RangedCoordi32, RangedCoordi64,
-        RangedCoordu32, RangedCoordu64, ToGroupByRange,
+        Category, CoordTranslate, GroupBy, IntoCentric, IntoPartialAxis, LogCoord, LogRange,
+        LogScalable, Ranged, RangedCoord, RangedCoordf32, RangedCoordf64, RangedCoordi32,
+        RangedCoordi64, RangedCoordu32, RangedCoordu64, ToGroupByRange,
     };
 
     #[cfg(feature = "chrono")]
