@@ -3,45 +3,10 @@
 */
 use std::marker::PhantomData;
 
+use crate::data::Quartiles;
 use crate::drawing::backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 use crate::element::{Drawable, PointCollection};
 use crate::style::{ShapeStyle, GREEN};
-
-fn median<T: Into<f64> + Copy + PartialOrd>(s: &[T]) -> f64 {
-    let mut s = s.to_owned();
-    s.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    match s.len() % 2 {
-        0 => (s[(s.len() / 2) - 1].into() / 2.0) + (s[(s.len() / 2)].into() / 2.0),
-        _ => s[s.len() / 2].into(),
-    }
-}
-
-fn quartiles<T: Into<f64> + Copy + PartialOrd>(s: &[T]) -> (f64, f64, f64) {
-    if s.len() == 1 {
-        let value = s[0].into();
-        return (value, value, value);
-    }
-    let mut s = s.to_owned();
-    s.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let (a, b) = if s.len() % 2 == 0 {
-        s.split_at(s.len() / 2)
-    } else {
-        (&s[..(s.len() / 2)], &s[((s.len() / 2) + 1)..])
-    };
-    (median(a), median(&s), median(b))
-}
-
-fn values<T: Into<f64> + Copy + PartialOrd>(s: &[T]) -> [f32; 5] {
-    let (q1, q2, q3) = quartiles(s);
-    let iqr = q3 - q1;
-    [
-        (q1 - 1.5 * iqr) as f32,
-        q1 as f32,
-        q2 as f32,
-        q3 as f32,
-        (q3 + 1.5 * iqr) as f32,
-    ]
-}
 
 pub trait BoxplotOrient<K, V> {
     type XType;
@@ -81,6 +46,8 @@ impl<K, V> BoxplotOrient<K, V> for BoxplotOrientH<K, V> {
     }
 }
 
+const DEFAULT_WIDTH: u32 = 10;
+
 /// The boxplot data point element
 pub struct Boxplot<K, O: BoxplotOrient<K, f32>> {
     style: ShapeStyle,
@@ -96,25 +63,24 @@ impl<K: Clone> Boxplot<K, BoxplotOrientV<K, f32>> {
     /// Create a new vertical boxplot element
     ///
     /// ```rust
+    /// use plotters::data::Quartiles;
     /// use plotters::element::{Boxplot, PointCollection};
     ///
-    /// let plot = Boxplot::new_vertical("group", &[7, 15, 36, 39, 40, 41]);
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// let plot = Boxplot::new_vertical("group", &quartiles);
     /// let points = &plot.point_iter()[1..4];
     /// assert_eq!(points[0].1, 15.0, "lower quartile");
     /// assert_eq!(points[1].1, 37.5, "median");
     /// assert_eq!(points[2].1, 40.0, "upper quartile");
     /// ```
-    pub fn new_vertical<T>(key: K, data: &[T]) -> Self
-    where
-        T: Into<f64> + Copy + PartialOrd,
-    {
+    pub fn new_vertical(key: K, quartiles: &Quartiles) -> Self {
         Self {
             style: Into::<ShapeStyle>::into(&GREEN),
-            width: 5,
+            width: DEFAULT_WIDTH,
             whisker_width: 1.0,
             offset: 0.0,
             key,
-            values: values(data),
+            values: quartiles.values(),
             _p: PhantomData,
         }
     }
@@ -124,25 +90,24 @@ impl<K: Clone> Boxplot<K, BoxplotOrientH<K, f32>> {
     /// Create a new horizontal boxplot element
     ///
     /// ```rust
+    /// use plotters::data::Quartiles;
     /// use plotters::element::{Boxplot, PointCollection};
     ///
-    /// let plot = Boxplot::new_horizontal("group", &[7, 15, 36, 39, 40, 41]);
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// let plot = Boxplot::new_horizontal("group", &quartiles);
     /// let points = &plot.point_iter()[1..4];
     /// assert_eq!(points[0].0, 15.0, "lower quartile");
     /// assert_eq!(points[1].0, 37.5, "median");
     /// assert_eq!(points[2].0, 40.0, "upper quartile");
     /// ```
-    pub fn new_horizontal<T>(key: K, data: &[T]) -> Self
-    where
-        T: Into<f64> + Copy + PartialOrd,
-    {
+    pub fn new_horizontal(key: K, quartiles: &Quartiles) -> Self {
         Self {
             style: Into::<ShapeStyle>::into(&GREEN),
-            width: 5,
+            width: DEFAULT_WIDTH,
             whisker_width: 1.0,
             offset: 0.0,
             key,
-            values: values(data),
+            values: quartiles.values(),
             _p: PhantomData,
         }
     }

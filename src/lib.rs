@@ -682,6 +682,8 @@ pub mod prelude {
         TriangleMarker,
     };
 
+    pub use crate::data::Quartiles;
+
     // TODO: This should be deprecated and completely removed
     #[cfg(feature = "deprecated_items")]
     #[allow(deprecated)]
