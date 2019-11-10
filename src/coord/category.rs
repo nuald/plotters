@@ -94,7 +94,7 @@ impl<T: PartialEq> Ranged for CategoryElementsRange<T> {
 
     fn key_points(&self, max_points: usize) -> Vec<Self::ValueType> {
         let mut ret = vec![];
-        let total_span = (self.1.idx - self.0.idx) as f64;
+        let total_span = (self.1.idx - self.0.idx + 2) as f64;
         let inner = &self.0.inner;
         let step = (total_span / max_points as f64 + 1.0) as usize;
         for idx in (self.0.idx..=self.1.idx).step_by(step) {

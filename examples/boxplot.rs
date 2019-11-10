@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let category = Category::new(
         "Host",
         dataset
-            .into_iter()
+            .iter()
             .unique_by(|x| x.0)
             .sorted_by(|a, b| a.2.median().partial_cmp(&b.2.median()).unwrap())
             .map(|x| x.0)
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let values: Vec<f32> = dataset
-        .into_iter()
+        .iter()
         .map(|x| x.2.values().to_vec())
         .flatten()
         .collect();
@@ -76,18 +76,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .draw()?;
 
     for (label, (values, style, offset)) in &series {
-        let style_copy = style.clone();
-        chart.draw_series(values.iter().map(|x| {
-            Boxplot::new_horizontal(category.get(&x.0).unwrap(), &x.1)
-                .width(20)
-                .whisker_width(0.5)
-                .style(*style)
-                .offset(*offset)
-        }))?
-        .label(*label)
-        .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], style_copy));
+        let style_copy = *style;
+        chart
+            .draw_series(values.iter().map(|x| {
+                Boxplot::new_horizontal(category.get(&x.0).unwrap(), &x.1)
+                    .width(20)
+                    .whisker_width(0.5)
+                    .style(*style)
+                    .offset(*offset)
+            }))?
+            .label(*label)
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], style_copy));
     }
-    chart.configure_series_labels().border_style(&BLACK).draw()?;
+    chart
+        .configure_series_labels()
+        .border_style(&BLACK)
+        .draw()?;
 
     let drawing_areas = lower.split_evenly((1, 2));
     let (left, right) = (&drawing_areas[0], &drawing_areas[1]);
