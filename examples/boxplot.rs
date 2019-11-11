@@ -2,6 +2,23 @@ use itertools::Itertools;
 use plotters::data::fitting_range;
 use plotters::prelude::*;
 use std::collections::HashMap;
+use std::env;
+use std::fs;
+use std::io::{self, prelude::*, BufReader};
+
+fn read_data<BR: BufRead>(reader: BR) -> HashMap<(String, String), Vec<f64>> {
+    let mut ds = HashMap::new();
+    for l in reader.lines() {
+        let line = l.unwrap();
+        let tuple: Vec<&str> = line.split('\t').collect();
+        if tuple.len() == 3 {
+            let key = (String::from(tuple[0]), String::from(tuple[1]));
+            let entry = ds.entry(key).or_insert_with(|| (Vec::new()));
+            entry.push(tuple[2].parse::<f64>().unwrap());
+        }
+    }
+    ds
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new("plotters-doc-data/boxplot.svg", (1024, 768)).into_drawing_area();
@@ -9,47 +26,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (upper, lower) = root.split_vertically(512);
 
-    let ping_wireless_1x = [
-        41.6, 32.5, 33.1, 32.3, 36.7, 32.0, 33.1, 32.0, 32.9, 32.7, 34.5, 36.5, 31.9, 33.7, 32.6,
-        35.1,
-    ];
-    let ping_wireless_8x = [
-        42.3, 32.9, 32.9, 34.3, 32.0, 33.3, 31.5, 33.1, 33.2, 35.9, 42.3, 34.1, 34.2, 34.2, 32.4,
-        33.0,
-    ];
-    let ping_wired_1x = [
-        31.8, 28.6, 29.4, 28.8, 28.2, 28.8, 28.4, 28.6, 28.3, 28.5, 28.5, 28.5, 28.4, 28.6, 28.4,
-        28.9,
-    ];
-    let ping_wired_8x = [
-        33.3, 28.4, 28.7, 29.1, 29.6, 28.9, 28.6, 29.3, 28.6, 29.1, 28.7, 28.3, 28.3, 28.6, 29.4,
-        33.1,
-    ];
-    let dataset = [
-        ("1.1.1.1", "wireless", Quartiles::new(&ping_wireless_1x)),
-        ("8.8.8.8", "wireless", Quartiles::new(&ping_wireless_8x)),
-        ("1.1.1.1", "wired", Quartiles::new(&ping_wired_1x)),
-        ("8.8.8.8", "wired", Quartiles::new(&ping_wired_8x)),
-    ];
+    let args: Vec<String> = env::args().collect();
+
+    let ds = if args.len() < 2 {
+        read_data(io::Cursor::new(get_data()))
+    } else {
+        let file = fs::File::open(&args[1])?;
+        read_data(BufReader::new(file))
+    };
+    let dataset: Vec<(String, String, Quartiles)> = ds
+        .iter()
+        .map(|(k, v)| (k.0.clone(), k.1.clone(), Quartiles::new(&v)))
+        .collect();
 
     let category = Category::new(
         "Host",
         dataset
             .iter()
-            .unique_by(|x| x.0)
-            .sorted_by(|a, b| a.2.median().partial_cmp(&b.2.median()).unwrap())
-            .map(|x| x.0)
+            .unique_by(|x| x.0.clone())
+            .sorted_by(|a, b| b.2.median().partial_cmp(&a.2.median()).unwrap())
+            .map(|x| x.0.clone())
             .collect(),
     );
 
-    let mut colors = [GREEN, RED].iter();
-    let mut offsets = (-15..).step_by(30);
+    let mut colors = [BLUE, RED].iter();
+    let mut offsets = (-7..).step_by(14);
     let mut series = HashMap::new();
     for x in dataset.iter() {
         let entry = series
-            .entry(x.1)
+            .entry(x.1.clone())
             .or_insert_with(|| (Vec::new(), colors.next().unwrap(), offsets.next().unwrap()));
-        entry.0.push((x.0, &x.2));
+        entry.0.push((x.0.clone(), &x.2));
     }
 
     let values: Vec<f32> = dataset
@@ -61,17 +68,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut chart = ChartBuilder::on(&upper)
         .x_label_area_size(40)
-        .y_label_area_size(40)
+        .y_label_area_size(100)
         .caption("Ping Boxplot", ("sans-serif", 20).into_font())
-        .build_ranged(
-            values_range.start - 1.0..values_range.end + 1.0,
-            category.range(),
-        )?;
+        .build_ranged(0.0..values_range.end + 1.0, category.range())?;
 
     chart
         .configure_mesh()
         .x_desc("Ping, ms")
         .y_desc(category.name())
+        .y_labels(category.len())
         .line_style_2(&WHITE)
         .draw()?;
 
@@ -80,12 +85,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         chart
             .draw_series(values.iter().map(|x| {
                 Boxplot::new_horizontal(category.get(&x.0).unwrap(), &x.1)
-                    .width(20)
+                    .width(10)
                     .whisker_width(0.5)
                     .style(*style)
                     .offset(*offset)
             }))?
-            .label(*label)
+            .label(label)
             .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], style_copy));
     }
     chart
@@ -120,4 +125,75 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .draw(&Boxplot::new_horizontal(1, &values))?;
 
     Ok(())
+}
+
+fn get_data() -> String {
+    String::from(
+        "
+ 1.1.1.1	wireless	41.6
+ 1.1.1.1	wireless	32.5
+ 1.1.1.1	wireless	33.1
+ 1.1.1.1	wireless	32.3
+ 1.1.1.1	wireless	36.7
+ 1.1.1.1	wireless	32.0
+ 1.1.1.1	wireless	33.1
+ 1.1.1.1	wireless	32.0
+ 1.1.1.1	wireless	32.9
+ 1.1.1.1	wireless	32.7
+ 1.1.1.1	wireless	34.5
+ 1.1.1.1	wireless	36.5
+ 1.1.1.1	wireless	31.9
+ 1.1.1.1	wireless	33.7
+ 1.1.1.1	wireless	32.6
+ 1.1.1.1	wireless	35.1
+ 8.8.8.8	wireless	42.3
+ 8.8.8.8	wireless	32.9
+ 8.8.8.8	wireless	32.9
+ 8.8.8.8	wireless	34.3
+ 8.8.8.8	wireless	32.0
+ 8.8.8.8	wireless	33.3
+ 8.8.8.8	wireless	31.5
+ 8.8.8.8	wireless	33.1
+ 8.8.8.8	wireless	33.2
+ 8.8.8.8	wireless	35.9
+ 8.8.8.8	wireless	42.3
+ 8.8.8.8	wireless	34.1
+ 8.8.8.8	wireless	34.2
+ 8.8.8.8	wireless	34.2
+ 8.8.8.8	wireless	32.4
+ 8.8.8.8	wireless	33.0
+ 1.1.1.1	wired	31.8
+ 1.1.1.1	wired	28.6
+ 1.1.1.1	wired	29.4
+ 1.1.1.1	wired	28.8
+ 1.1.1.1	wired	28.2
+ 1.1.1.1	wired	28.8
+ 1.1.1.1	wired	28.4
+ 1.1.1.1	wired	28.6
+ 1.1.1.1	wired	28.3
+ 1.1.1.1	wired	28.5
+ 1.1.1.1	wired	28.5
+ 1.1.1.1	wired	28.5
+ 1.1.1.1	wired	28.4
+ 1.1.1.1	wired	28.6
+ 1.1.1.1	wired	28.4
+ 1.1.1.1	wired	28.9
+ 8.8.8.8	wired	33.3
+ 8.8.8.8	wired	28.4
+ 8.8.8.8	wired	28.7
+ 8.8.8.8	wired	29.1
+ 8.8.8.8	wired	29.6
+ 8.8.8.8	wired	28.9
+ 8.8.8.8	wired	28.6
+ 8.8.8.8	wired	29.3
+ 8.8.8.8	wired	28.6
+ 8.8.8.8	wired	29.1
+ 8.8.8.8	wired	28.7
+ 8.8.8.8	wired	28.3
+ 8.8.8.8	wired	28.3
+ 8.8.8.8	wired	28.6
+ 8.8.8.8	wired	29.4
+ 8.8.8.8	wired	33.1
+",
+    )
 }
