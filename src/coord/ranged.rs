@@ -40,6 +40,17 @@ pub struct RangedCoord<X: Ranged, Y: Ranged> {
     back_y: (i32, i32),
 }
 
+impl<X: Ranged + Clone, Y: Ranged + Clone> Clone for RangedCoord<X, Y> {
+    fn clone(&self) -> Self {
+        Self {
+            logic_x: self.logic_x.clone(),
+            logic_y: self.logic_y.clone(),
+            back_x: self.back_x,
+            back_y: self.back_y,
+        }
+    }
+}
+
 impl<X: Ranged, Y: Ranged> RangedCoord<X, Y> {
     /// Create a new ranged value coordinate system
     pub fn new<IntoX: Into<X>, IntoY: Into<Y>>(
@@ -105,6 +116,14 @@ impl<X: Ranged, Y: Ranged> RangedCoord<X, Y> {
     pub fn get_y_axis_pixel_range(&self) -> Range<i32> {
         self.logic_y.axis_pixel_range(self.back_y)
     }
+
+    pub fn x_spec(&self) -> &X {
+        &self.logic_x
+    }
+
+    pub fn y_spec(&self) -> &Y {
+        &self.logic_y
+    }
 }
 
 impl<X: Ranged, Y: Ranged> CoordTranslate for RangedCoord<X, Y> {
@@ -152,13 +171,16 @@ impl<'a, X: Ranged, Y: Ranged> MeshLine<'a, X, Y> {
 pub trait DiscreteRanged
 where
     Self: Ranged,
-    Self::ValueType: Eq,
 {
+    type RangeParameter;
+
+    fn get_range_parameter(&self) -> Self::RangeParameter;
+
     /// Get the smallest value that is larger than the `this` value
-    fn next_value(this: &Self::ValueType) -> Self::ValueType;
+    fn next_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType;
 
     /// Get the largest value that is smaller than `this` value
-    fn previous_value(this: &Self::ValueType) -> Self::ValueType;
+    fn previous_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType;
 }
 
 /// The trait for the type that can be converted into a ranged coordinate axis
@@ -203,6 +225,15 @@ where
 {
 }
 
+impl<D: DiscreteRanged + Clone> Clone for CentricDiscreteRange<D>
+where
+    <D as Ranged>::ValueType: Eq,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
 impl<D: DiscreteRanged> Ranged for CentricDiscreteRange<D>
 where
     <D as Ranged>::ValueType: Eq,
@@ -210,7 +241,7 @@ where
     type ValueType = <D as Ranged>::ValueType;
 
     fn map(&self, value: &Self::ValueType, limit: (i32, i32)) -> i32 {
-        let prev = <D as DiscreteRanged>::previous_value(&value);
+        let prev = <D as DiscreteRanged>::previous_value(&value, &self.0.get_range_parameter());
         (self.0.map(&prev, limit) + self.0.map(value, limit)) / 2
     }
 
@@ -227,12 +258,16 @@ impl<D: DiscreteRanged> DiscreteRanged for CentricDiscreteRange<D>
 where
     <D as Ranged>::ValueType: Eq,
 {
-    fn next_value(this: &Self::ValueType) -> Self::ValueType {
-        <D as DiscreteRanged>::next_value(this)
+    type RangeParameter = <D as DiscreteRanged>::RangeParameter;
+    fn get_range_parameter(&self) -> Self::RangeParameter {
+        self.0.get_range_parameter()
+    }
+    fn next_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType {
+        <D as DiscreteRanged>::next_value(this, param)
     }
 
-    fn previous_value(this: &Self::ValueType) -> Self::ValueType {
-        <D as DiscreteRanged>::previous_value(this)
+    fn previous_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType {
+        <D as DiscreteRanged>::previous_value(this, param)
     }
 }
 
@@ -265,6 +300,15 @@ pub trait IntoPartialAxis: AsRangedCoord {
 
 impl<R: AsRangedCoord> IntoPartialAxis for R {}
 
+impl<R: Ranged + Clone> Clone for PartialAxis<R>
+where
+    <R as Ranged>::ValueType: Clone,
+{
+    fn clone(&self) -> Self {
+        PartialAxis(self.0.clone(), self.1.clone())
+    }
+}
+
 impl<R: Ranged> Ranged for PartialAxis<R>
 where
     R::ValueType: Clone,
@@ -296,12 +340,16 @@ where
     R: Ranged,
     <R as Ranged>::ValueType: Eq + Clone,
 {
-    fn next_value(this: &Self::ValueType) -> Self::ValueType {
-        <R as DiscreteRanged>::next_value(this)
+    type RangeParameter = <R as DiscreteRanged>::RangeParameter;
+    fn get_range_parameter(&self) -> Self::RangeParameter {
+        self.0.get_range_parameter()
+    }
+    fn next_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType {
+        <R as DiscreteRanged>::next_value(this, param)
     }
 
-    fn previous_value(this: &Self::ValueType) -> Self::ValueType {
-        <R as DiscreteRanged>::previous_value(this)
+    fn previous_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType {
+        <R as DiscreteRanged>::previous_value(this, param)
     }
 }
 

@@ -84,6 +84,7 @@ impl<Z: TimeZone> TimeValue for DateTime<Z> {
 }
 
 /// The ranged coordinate for date
+#[derive(Clone)]
 pub struct RangedDate<Z: TimeZone>(Date<Z>, Date<Z>);
 
 impl<Z: TimeZone> From<Range<Date<Z>>> for RangedDate<Z> {
@@ -134,11 +135,13 @@ impl<Z: TimeZone> Ranged for RangedDate<Z> {
 }
 
 impl<Z: TimeZone> DiscreteRanged for RangedDate<Z> {
-    fn next_value(this: &Date<Z>) -> Date<Z> {
+    type RangeParameter = ();
+    fn get_range_parameter(&self) -> () {}
+    fn next_value(this: &Date<Z>, _: &()) -> Date<Z> {
         this.clone() + Duration::days(1)
     }
 
-    fn previous_value(this: &Date<Z>) -> Date<Z> {
+    fn previous_value(this: &Date<Z>, _: &()) -> Date<Z> {
         this.clone() - Duration::days(1)
     }
 }
@@ -153,6 +156,7 @@ impl<Z: TimeZone> AsRangedCoord for Range<Date<Z>> {
 /// Note: since month doesn't have a constant duration.
 /// We can't use a simple granularity to describe it. Thus we have
 /// this axis decorator to make it yield monthly key-points.
+#[derive(Clone)]
 pub struct Monthly<T: TimeValue>(Range<T>);
 
 impl<T: TimeValue + Clone> AsRangedCoord for Monthly<T> {
@@ -263,7 +267,9 @@ impl<T: TimeValue + Clone> Ranged for Monthly<T> {
 }
 
 impl<T: TimeValue + Clone> DiscreteRanged for Monthly<T> {
-    fn next_value(this: &T) -> T {
+    type RangeParameter = ();
+    fn get_range_parameter(&self) -> () {}
+    fn next_value(this: &T, _: &()) -> T {
         let mut year = this.date_ceil().year();
         let mut month = this.date_ceil().month();
         month += 1;
@@ -274,7 +280,7 @@ impl<T: TimeValue + Clone> DiscreteRanged for Monthly<T> {
         T::earliest_after_date(this.timezone().ymd(year, month, this.date_ceil().day()))
     }
 
-    fn previous_value(this: &T) -> T {
+    fn previous_value(this: &T, _: &()) -> T {
         let mut year = this.clone().date_floor().year();
         let mut month = this.clone().date_floor().month();
         month -= 1;
@@ -287,6 +293,7 @@ impl<T: TimeValue + Clone> DiscreteRanged for Monthly<T> {
 }
 
 /// Indicate the coord has a yearly granularity.
+#[derive(Clone)]
 pub struct Yearly<T: TimeValue>(Range<T>);
 
 impl<T: TimeValue + Clone> AsRangedCoord for Yearly<T> {
@@ -373,11 +380,13 @@ impl<T: TimeValue + Clone> Ranged for Yearly<T> {
 }
 
 impl<T: TimeValue + Clone> DiscreteRanged for Yearly<T> {
-    fn next_value(this: &T) -> T {
+    type RangeParameter = ();
+    fn get_range_parameter(&self) -> () {}
+    fn next_value(this: &T, _: &()) -> T {
         T::earliest_after_date(this.timezone().ymd(this.date_floor().year() + 1, 1, 1))
     }
 
-    fn previous_value(this: &T) -> T {
+    fn previous_value(this: &T, _: &()) -> T {
         T::earliest_after_date(this.timezone().ymd(this.date_ceil().year() - 1, 1, 1))
     }
 }
@@ -405,6 +414,7 @@ impl<T: TimeValue> IntoYearly<T> for Range<T> {
 }
 
 /// The ranged coordinate for the date and time
+#[derive(Clone)]
 pub struct RangedDateTime<Z: TimeZone>(DateTime<Z>, DateTime<Z>);
 
 impl<Z: TimeZone> AsRangedCoord for Range<DateTime<Z>> {
@@ -477,6 +487,7 @@ impl<Z: TimeZone> Ranged for RangedDateTime<Z> {
 }
 
 /// The coordinate that for duration of time
+#[derive(Clone)]
 pub struct RangedDuration(Duration, Duration);
 
 impl AsRangedCoord for Range<Duration> {

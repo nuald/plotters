@@ -5,10 +5,12 @@ use super::{AsRangedCoord, DiscreteRanged, Ranged, ReversibleRanged};
 macro_rules! impl_discrete_trait {
     ($name:ident) => {
         impl DiscreteRanged for $name {
-            fn next_value(this: &Self::ValueType) -> Self::ValueType {
+            type RangeParameter = ();
+            fn get_range_parameter(&self) -> () {}
+            fn next_value(this: &Self::ValueType, _: &()) -> Self::ValueType {
                 return *this + 1;
             }
-            fn previous_value(this: &Self::ValueType) -> Self::ValueType {
+            fn previous_value(this: &Self::ValueType, _: &()) -> Self::ValueType {
                 return *this - 1;
             }
         }
@@ -27,6 +29,7 @@ macro_rules! impl_ranged_type_trait {
 macro_rules! make_numeric_coord {
     ($type:ty, $name:ident, $key_points:ident, $doc: expr) => {
         #[doc = $doc]
+        #[derive(Clone)]
         pub struct $name($type, $type);
         impl From<Range<$type>> for $name {
             fn from(range: Range<$type>) -> Self {
@@ -313,11 +316,15 @@ pub mod group_integer_by {
         T::ValueType: PrimInt + ToPrimitive + FromPrimitive + Mul,
         T: Ranged + DiscreteRanged,
     {
-        fn previous_value(this: &Self::ValueType) -> Self::ValueType {
-            <T as DiscreteRanged>::previous_value(this)
+        type RangeParameter = <T as DiscreteRanged>::RangeParameter;
+        fn get_range_parameter(&self) -> Self::RangeParameter {
+            self.0.get_range_parameter()
         }
-        fn next_value(this: &Self::ValueType) -> Self::ValueType {
-            <T as DiscreteRanged>::next_value(this)
+        fn previous_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType {
+            <T as DiscreteRanged>::previous_value(this, param)
+        }
+        fn next_value(this: &Self::ValueType, param: &Self::RangeParameter) -> Self::ValueType {
+            <T as DiscreteRanged>::next_value(this, param)
         }
     }
 
