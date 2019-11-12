@@ -13,7 +13,7 @@ fn read_data<BR: BufRead>(reader: BR) -> HashMap<(String, String), Vec<f64>> {
         let tuple: Vec<&str> = line.split('\t').collect();
         if tuple.len() == 3 {
             let key = (String::from(tuple[0]), String::from(tuple[1]));
-            let entry = ds.entry(key).or_insert_with(|| (Vec::new()));
+            let entry = ds.entry(key).or_insert_with(Vec::new);
             entry.push(tuple[2].parse::<f64>().unwrap());
         }
     }
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut chart = ChartBuilder::on(&upper)
         .x_label_area_size(40)
-        .y_label_area_size(100)
+        .y_label_area_size(120)
         .caption("Ping Boxplot", ("sans-serif", 20).into_font())
         .build_ranged(0.0..values_range.end + 1.0, category.range())?;
 
@@ -95,7 +95,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     chart
         .configure_series_labels()
-        .border_style(&BLACK)
+        .position(SeriesLabelPosition::UpperRight)
+        .background_style(WHITE.filled())
         .draw()?;
 
     let drawing_areas = lower.split_evenly((1, 2));

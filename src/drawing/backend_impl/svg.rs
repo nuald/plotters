@@ -7,7 +7,7 @@ use svg::node::element::{Circle, Line, Polygon, Polyline, Rectangle, Text};
 use svg::Document;
 
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
-use crate::style::{Color, FontDesc, FontStyle, FontTransform, RGBAColor};
+use crate::style::{Color, FontStyle, FontTransform, RGBAColor, TextAlignment, TextStyle};
 
 use std::io::{Cursor, Error};
 use std::path::Path;
@@ -235,13 +235,15 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         self.update_document(|d| d.add(node));
         Ok(())
     }
-    fn draw_text<'b>(
+
+    fn draw_text(
         &mut self,
         text: &str,
-        font: &FontDesc<'b>,
+        style: &TextStyle,
         pos: BackendCoord,
-        color: &RGBAColor,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let font = &style.font;
+        let color = &style.color;
         if color.alpha() == 0.0 {
             return Ok(());
         }
@@ -253,9 +255,16 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         let x0 = pos.0 + offset.0;
         let y0 = pos.1 + offset.1;
 
+        let max_x = (layout.1).0;
+        let (dx, anchor) = match style.alignment {
+            TextAlignment::Left => (0, "start"),
+            TextAlignment::Right => (max_x, "end"),
+            TextAlignment::Center => (max_x / 2, "middle"),
+        };
         let node = Text::new()
-            .set("x", x0)
+            .set("x", x0 + dx)
             .set("y", y0 - (layout.0).1)
+            .set("text-anchor", anchor)
             .set("font-family", font.get_name())
             .set("font-size", font.get_size())
             .set("opacity", make_svg_opacity(color))

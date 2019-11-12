@@ -268,6 +268,7 @@ impl<'a> BitMapBackend<'a> {
         }
     }
 
+    #[allow(clippy::cast_ptr_alignment)]
     fn fill_rect_fast(
         &mut self,
         upper_left: (i32, i32),

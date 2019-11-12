@@ -13,7 +13,7 @@ use crate::coord::{
 use crate::drawing::backend::{BackendCoord, DrawingBackend};
 use crate::drawing::{DrawingArea, DrawingAreaErrorKind};
 use crate::element::{Drawable, DynElement, IntoDynElement, PathElement, PointCollection};
-use crate::style::{AsRelative, FontTransform, ShapeStyle, SizeDesc, TextStyle};
+use crate::style::{AsRelative, FontTransform, ShapeStyle, SizeDesc, TextAlignment, TextStyle};
 
 /// The annotations (such as the label of the series, the legend element, etc)
 /// When a series is drawn onto a drawing area, an series annotation object
@@ -381,6 +381,9 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, RangedCo
             } else {
                 tick_size.abs() * 2
             };
+
+        /* All labels are right-aligned. */
+        let label_style = &label_style.alignment(TextAlignment::Right);
 
         /* Draw the axis and get the axis range so that we can do further label
          * and tick mark drawing */
