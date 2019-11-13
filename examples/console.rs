@@ -18,16 +18,16 @@ enum PixelState {
 }
 
 impl PixelState {
-    fn to_char(&self) -> char {
+    fn to_char(self) -> char {
         match self {
             Self::Empty => ' ',
             Self::HLine => '-',
             Self::VLine => '|',
             Self::Cross => '+',
             Self::Pixel => '.',
-            Self::Text(c) => *c,
+            Self::Text(c) => c,
             Self::Circle(filled) => {
-                if *filled {
+                if filled {
                     '@'
                 } else {
                     'O'
@@ -35,6 +35,7 @@ impl PixelState {
             }
         }
     }
+
     fn update(&mut self, new_state: PixelState) {
         let next_state = match (*self, new_state) {
             (Self::HLine, Self::VLine) => Self::Cross,

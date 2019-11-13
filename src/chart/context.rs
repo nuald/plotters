@@ -164,23 +164,21 @@ impl<
     > ChartContext<'a, DB, RangedCoord<X, Y>>
 {
     fn is_overlapping_drawing_area(&self, area: Option<&DrawingArea<DB, Shift>>) -> bool {
-        let area = if area.is_none() {
-            return false;
+        if let Some(area) = area {
+            let (x0, y0) = area.get_base_pixel();
+            let (w, h) = area.dim_in_pixel();
+            let (x1, y1) = (x0 + w as i32, y0 + h as i32);
+            let (dx0, dy0) = self.drawing_area.get_base_pixel();
+            let (w, h) = self.drawing_area.dim_in_pixel();
+            let (dx1, dy1) = (dx0 + w as i32, dy0 + h as i32);
+
+            let (ox0, ox1) = (x0.max(dx0), x1.min(dx1));
+            let (oy0, oy1) = (y0.max(dy0), y1.min(dy1));
+
+            ox1 > ox0 && oy1 > oy0
         } else {
-            area.unwrap()
-        };
-
-        let (x0, y0) = area.get_base_pixel();
-        let (w, h) = area.dim_in_pixel();
-        let (x1, y1) = (x0 + w as i32, y0 + h as i32);
-        let (dx0, dy0) = self.drawing_area.get_base_pixel();
-        let (w, h) = self.drawing_area.dim_in_pixel();
-        let (dx1, dy1) = (dx0 + w as i32, dy0 + h as i32);
-
-        let (ox0, ox1) = (x0.max(dx0), x1.min(dx1));
-        let (oy0, oy1) = (y0.max(dy0), y1.min(dy1));
-
-        ox1 > ox0 && oy1 > oy0
+            false
+        }
     }
 
     /// Initialize a mesh configuration object and mesh drawing can be finalized by calling

@@ -1,7 +1,3 @@
-/*!
-  The quartiles
-*/
-
 /// The quartiles
 #[derive(Clone, Debug)]
 pub struct Quartiles {
@@ -22,6 +18,16 @@ impl Quartiles {
         }
     }
 
+    /// Create a new quartiles struct with the values calculated from the argument.
+    ///
+    /// - `s`: The array of the original values
+    /// - **returns** The newly created quartiles
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// ```
     pub fn new<T: Into<f64> + Copy + PartialOrd>(s: &[T]) -> Self {
         if s.len() == 1 {
             let value = s[0].into();
@@ -55,6 +61,17 @@ impl Quartiles {
         }
     }
 
+    /// Get the quartiles values.
+    ///
+    /// - **returns** The array [lower fence, lower quartile, median, upper quartile, upper fence]
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// let values = quartiles.values();
+    /// assert_eq!(values, [-22.5, 15.0, 37.5, 40.0, 77.5]);
+    /// ```
     pub fn values(&self) -> [f32; 5] {
         [
             self.lower_fence as f32,
@@ -65,6 +82,16 @@ impl Quartiles {
         ]
     }
 
+    /// Get the quartiles median.
+    ///
+    /// - **returns** The median
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// assert_eq!(quartiles.median(), 37.5);
+    /// ```
     pub fn median(&self) -> f64 {
         self.median
     }

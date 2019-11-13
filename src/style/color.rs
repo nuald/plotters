@@ -92,7 +92,7 @@ impl<P: Palette> SimpleColor for PaletteColor<P> {
     }
 }
 
-/// The color described by it's RGB value
+/// The color described by its RGB value
 #[derive(Debug)]
 pub struct RGBColor(pub u8, pub u8, pub u8);
 

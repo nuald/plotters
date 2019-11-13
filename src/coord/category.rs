@@ -1,21 +1,23 @@
-/// The category coordinates
 use std::fmt;
 use std::ops::Range;
 use std::rc::Rc;
 
 use super::{AsRangedCoord, Ranged};
 
+/// The category coordinate
 pub struct Category<T: PartialEq> {
     name: String,
     elements: Rc<Vec<T>>,
 }
 
+/// The category element reference (tick).
 pub struct CategoryElementRef<T: PartialEq> {
     inner: Rc<Vec<T>>,
     // i32 type is required for the empty ref (having -1 value)
     idx: i32,
 }
 
+/// The category elements range.
 pub struct CategoryElementsRange<T: PartialEq>(CategoryElementRef<T>, CategoryElementRef<T>);
 
 impl<T: PartialEq> Clone for CategoryElementRef<T> {
@@ -35,6 +37,17 @@ impl<T: PartialEq + fmt::Display> fmt::Debug for CategoryElementRef<T> {
 }
 
 impl<T: PartialEq> Category<T> {
+    /// Create a new category coordinate.
+    ///
+    /// - `name`: The name of the category
+    /// - `elements`: The vector of category elements
+    /// - **returns** The newly created category coordinate
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let category = Category::new("color", vec!["red", "green", "blue"]);
+    /// ```
     pub fn new<S: Into<String>>(name: S, elements: Vec<T>) -> Self {
         Self {
             name: name.into(),
@@ -42,6 +55,20 @@ impl<T: PartialEq> Category<T> {
         }
     }
 
+    /// Get an element reference (tick) by its value.
+    ///
+    /// - `val`: The value of the element
+    /// - **returns** The optional reference
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let category = Category::new("color", vec!["red", "green", "blue"]);
+    /// let red = category.get(&"red");
+    /// assert!(red.is_some());
+    /// let unknown = category.get(&"unknown");
+    /// assert!(unknown.is_none());
+    /// ```
     pub fn get(&self, val: &T) -> Option<CategoryElementRef<T>> {
         match self.elements.iter().position(|x| x == val) {
             Some(pos) => {
@@ -55,6 +82,16 @@ impl<T: PartialEq> Category<T> {
         }
     }
 
+    /// Create a full range over the category elements.
+    ///
+    /// - **returns** The range including all category elements
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let category = Category::new("color", vec!["red", "green", "blue"]);
+    /// let range = category.range();
+    /// ```
     pub fn range(&self) -> CategoryElementsRange<T> {
         let start = 0;
         let end = self.elements.len() as i32 - 1;
@@ -70,14 +107,47 @@ impl<T: PartialEq> Category<T> {
         )
     }
 
+    /// Get the number of elements in the category.
+    ///
+    /// - **returns** The number of elements
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let category = Category::new("color", vec!["red", "green", "blue"]);
+    /// assert_eq!(category.len(), 3);
+    /// ```
     pub fn len(&self) -> usize {
         self.elements.len()
     }
 
+    /// Returns `true` if the category contains no elements.
+    ///
+    /// - **returns** `true` is no elements, otherwise - `false`
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let category = Category::new("color", vec!["red", "green", "blue"]);
+    /// assert_eq!(category.is_empty(), false);
+    ///
+    /// let category = Category::new("empty", Vec::<&str>::new());
+    /// assert_eq!(category.is_empty(), true);
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.elements.is_empty()
     }
 
+    /// Get the category name.
+    ///
+    /// - **returns** The name of the category
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let category = Category::new("color", vec!["red", "green", "blue"]);
+    /// assert_eq!(category.name(), "color");
+    /// ```
     pub fn name(&self) -> String {
         self.name.clone()
     }

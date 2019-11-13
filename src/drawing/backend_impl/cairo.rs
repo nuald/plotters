@@ -3,7 +3,7 @@ use cairo::{Context as CairoContext, FontSlant, FontWeight, Status as CairoStatu
 #[allow(unused_imports)]
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 #[allow(unused_imports)]
-use crate::style::{Color, FontDesc, FontStyle, FontTransform, RGBAColor};
+use crate::style::{Color, FontStyle, FontTransform, RGBAColor, TextStyle};
 
 /// The drawing backend that is backed with a Cairo context
 pub struct CairoBackend<'a> {
@@ -227,13 +227,14 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         Ok(())
     }
 
-    fn draw_text<'b>(
+    fn draw_text(
         &mut self,
         text: &str,
-        font: &FontDesc<'b>,
+        font: &TextStyle,
         pos: BackendCoord,
-        color: &RGBAColor,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let font = &style.font;
+        let color = &style.color;
         let (mut x, mut y) = (pos.0, pos.1);
 
         let degree = match font.get_transform() {

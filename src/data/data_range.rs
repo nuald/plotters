@@ -12,22 +12,20 @@ where
     let (mut lb, mut ub) = (None, None);
 
     for value in iter.into_iter() {
-        match lb
+        if let Some(Ordering::Greater) = lb
             .as_ref()
             .map_or(Some(Ordering::Greater), |lbv: &T| lbv.partial_cmp(value))
         {
-            Some(Ordering::Greater) => lb = Some(value.clone()),
-            _ => {}
+            lb = Some(value.clone());
         }
 
-        match ub
+        if let Some(Ordering::Less) = ub
             .as_ref()
             .map_or(Some(Ordering::Less), |ubv: &T| ubv.partial_cmp(value))
         {
-            Some(Ordering::Less) => ub = Some(value.clone()),
-            _ => {}
+            ub = Some(value.clone());
         }
     }
 
-    lb.unwrap_or(Zero::zero())..ub.unwrap_or(One::one())
+    lb.unwrap_or_else(Zero::zero)..ub.unwrap_or_else(One::one)
 }

@@ -235,7 +235,7 @@ pub trait DrawingBackend: Sized {
                 if pos.1 + dy as i32 >= h as i32 {
                     break;
                 }
-                let r = src[(dx + dy * w) as usize * 3 + 0];
+                let r = src[(dx + dy * w) as usize * 3];
                 let g = src[(dx + dy * w) as usize * 3 + 1];
                 let b = src[(dx + dy * w) as usize * 3 + 2];
                 let color = crate::style::RGBColor(r, g, b);

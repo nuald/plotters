@@ -1,6 +1,3 @@
-/*!
-  The boxplot element, which showing the quartiles
-*/
 use std::marker::PhantomData;
 
 use crate::data::Quartiles;
@@ -8,6 +5,7 @@ use crate::drawing::backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 use crate::element::{Drawable, PointCollection};
 use crate::style::{ShapeStyle, GREEN};
 
+/// The boxplot orientation trait
 pub trait BoxplotOrient<K, V> {
     type XType;
     type YType;
@@ -16,8 +14,10 @@ pub trait BoxplotOrient<K, V> {
     fn with_offset(coord: BackendCoord, offset: f64) -> BackendCoord;
 }
 
+/// The vertical boxplot phantom
 pub struct BoxplotOrientV<K, V>(PhantomData<(K, V)>);
 
+/// The horizontal boxplot phantom
 pub struct BoxplotOrientH<K, V>(PhantomData<(K, V)>);
 
 impl<K, V> BoxplotOrient<K, V> for BoxplotOrientV<K, V> {
@@ -48,7 +48,7 @@ impl<K, V> BoxplotOrient<K, V> for BoxplotOrientH<K, V> {
 
 const DEFAULT_WIDTH: u32 = 10;
 
-/// The boxplot data point element
+/// The boxplot element
 pub struct Boxplot<K, O: BoxplotOrient<K, f32>> {
     style: ShapeStyle,
     width: u32,
@@ -60,18 +60,17 @@ pub struct Boxplot<K, O: BoxplotOrient<K, f32>> {
 }
 
 impl<K: Clone> Boxplot<K, BoxplotOrientV<K, f32>> {
-    /// Create a new vertical boxplot element
+    /// Create a new vertical boxplot element.
+    ///
+    /// - `key`: The key (the X axis value)
+    /// - `quartiles`: The quartiles values for the Y axis
+    /// - **returns** The newly created boxplot element
     ///
     /// ```rust
-    /// use plotters::data::Quartiles;
-    /// use plotters::element::{Boxplot, PointCollection};
+    /// use plotters::prelude::*;
     ///
     /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
     /// let plot = Boxplot::new_vertical("group", &quartiles);
-    /// let points = &plot.point_iter()[1..4];
-    /// assert_eq!(points[0].1, 15.0, "lower quartile");
-    /// assert_eq!(points[1].1, 37.5, "median");
-    /// assert_eq!(points[2].1, 40.0, "upper quartile");
     /// ```
     pub fn new_vertical(key: K, quartiles: &Quartiles) -> Self {
         Self {
@@ -87,18 +86,17 @@ impl<K: Clone> Boxplot<K, BoxplotOrientV<K, f32>> {
 }
 
 impl<K: Clone> Boxplot<K, BoxplotOrientH<K, f32>> {
-    /// Create a new horizontal boxplot element
+    /// Create a new horizontal boxplot element.
+    ///
+    /// - `key`: The key (the Y axis value)
+    /// - `quartiles`: The quartiles values for the X axis
+    /// - **returns** The newly created boxplot element
     ///
     /// ```rust
-    /// use plotters::data::Quartiles;
-    /// use plotters::element::{Boxplot, PointCollection};
+    /// use plotters::prelude::*;
     ///
     /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
     /// let plot = Boxplot::new_horizontal("group", &quartiles);
-    /// let points = &plot.point_iter()[1..4];
-    /// assert_eq!(points[0].0, 15.0, "lower quartile");
-    /// assert_eq!(points[1].0, 37.5, "median");
-    /// assert_eq!(points[2].0, 40.0, "upper quartile");
     /// ```
     pub fn new_horizontal(key: K, quartiles: &Quartiles) -> Self {
         Self {
@@ -114,25 +112,65 @@ impl<K: Clone> Boxplot<K, BoxplotOrientH<K, f32>> {
 }
 
 impl<K, O: BoxplotOrient<K, f32>> Boxplot<K, O> {
-    /// Set the style of the boxplot
+    /// Set the style of the boxplot.
+    ///
+    /// - `S`: The required style
+    /// - **returns** The up-to-dated boxplot element
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// let plot = Boxplot::new_horizontal("group", &quartiles).style(&BLUE);
+    /// ```
     pub fn style<S: Into<ShapeStyle>>(mut self, style: S) -> Self {
         self.style = style.into();
         self
     }
 
-    /// Set the bar width
+    /// Set the bar width.
+    ///
+    /// - `width`: The required width
+    /// - **returns** The up-to-dated boxplot element
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// let plot = Boxplot::new_horizontal("group", &quartiles).width(10);
+    /// ```
     pub fn width(mut self, width: u32) -> Self {
         self.width = width;
         self
     }
 
-    /// Set the width of the whiskers as a fraction of the bar width
+    /// Set the width of the whiskers as a fraction of the bar width.
+    ///
+    /// - `whisker_width`: The required fraction
+    /// - **returns** The up-to-dated boxplot element
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// let plot = Boxplot::new_horizontal("group", &quartiles).whisker_width(0.5);
+    /// ```
     pub fn whisker_width(mut self, whisker_width: f64) -> Self {
         self.whisker_width = whisker_width;
         self
     }
 
-    /// Set the element offset
+    /// Set the element offset on the key axis.
+    ///
+    /// - `offset`: The required offset (on the X axis for vertical, on the Y axis for horizontal)
+    /// - **returns** The up-to-dated boxplot element
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    ///
+    /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// let plot = Boxplot::new_horizontal("group", &quartiles).offset(-5);
+    /// ```
     pub fn offset<T: Into<f64> + Copy>(mut self, offset: T) -> Self {
         self.offset = offset.into();
         self

@@ -3,7 +3,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
-use crate::style::{Color, FontDesc, FontTransform, RGBAColor};
+use crate::style::{Color, FontTransform, RGBAColor, TextStyle};
 
 /// The backend that is drawing on the HTML canvas
 /// TODO: Support double buffering
@@ -230,13 +230,14 @@ impl DrawingBackend for CanvasBackend {
         Ok(())
     }
 
-    fn draw_text<'b>(
+    fn draw_text(
         &mut self,
         text: &str,
-        font: &FontDesc<'b>,
+        style: &TextStyle,
         pos: BackendCoord,
-        color: &RGBAColor,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let font = &style.font;
+        let color = &style.color;
         if color.alpha() == 0.0 {
             return Ok(());
         }
