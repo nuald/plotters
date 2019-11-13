@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect(),
     );
 
-    let mut colors = [BLUE, RED].iter();
+    let mut colors = (0..).map(Palette99::pick);
     let mut offsets = (-7..).step_by(14);
     let mut series = HashMap::new();
     for x in dataset.iter() {
@@ -81,22 +81,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .draw()?;
 
     for (label, (values, style, offset)) in &series {
-        let style_copy = *style;
         chart
             .draw_series(values.iter().map(|x| {
                 Boxplot::new_horizontal(category.get(&x.0).unwrap(), &x.1)
                     .width(10)
                     .whisker_width(0.5)
-                    .style(*style)
+                    .style(style)
                     .offset(*offset)
             }))?
             .label(label)
-            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], style_copy));
+            .legend(move |(x, y)| Rectangle::new([(x - 5, y - 5), (x + 5, y + 5)], style.filled()));
     }
     chart
         .configure_series_labels()
         .position(SeriesLabelPosition::UpperRight)
         .background_style(WHITE.filled())
+        .border_style(&BLACK.mix(0.5))
         .draw()?;
 
     let drawing_areas = lower.split_evenly((1, 2));

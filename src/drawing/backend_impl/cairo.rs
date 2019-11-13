@@ -230,7 +230,7 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
     fn draw_text(
         &mut self,
         text: &str,
-        font: &TextStyle,
+        style: &TextStyle,
         pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         let font = &style.font;
@@ -280,5 +280,40 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
             self.call_cairo(|c| c.restore())?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::prelude::*;
+    use cairo::{Content, RecordingSurface, Rectangle};
+
+    #[test]
+    fn test_draw_mesh() {
+        let surface = RecordingSurface::create(
+            Content::ColorAlpha,
+            Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 1024.0,
+                height: 768.0,
+            },
+        ).unwrap();
+        let cr = CairoContext::new(&surface);
+        let root = CairoBackend::new(&cr, (500, 500))
+            .unwrap()
+            .into_drawing_area();
+        root.fill(&WHITE).unwrap();
+
+        let mut chart = ChartBuilder::on(&root)
+            .caption("This is a test", ("sans-serif", 20))
+            .x_label_area_size(40)
+            .y_label_area_size(40)
+            .build_ranged(0..100, 0..100)
+            .unwrap();
+
+        chart.configure_mesh().draw().unwrap();
+        assert_eq!(surface.ink_extents(), (0.0, 0.0, 1024.0, 768.0));
     }
 }
