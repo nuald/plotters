@@ -27,6 +27,10 @@ impl Quartiles {
     /// use plotters::prelude::*;
     ///
     /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
+    /// assert_eq!(quartiles.median(), 37.5);
+    ///
+    /// let quartiles = Quartiles::new(&[15.0]);
+    /// assert_eq!(quartiles.median(), 15.0);
     /// ```
     pub fn new<T: Into<f64> + Copy + PartialOrd>(s: &[T]) -> Self {
         if s.len() == 1 {

@@ -192,3 +192,45 @@ impl<T: PartialEq> AsRangedCoord for Range<CategoryElementRef<T>> {
     type CoordDescType = CategoryElementsRange<T>;
     type Value = CategoryElementRef<T>;
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_clone_trait() {
+        let category = Category::new("color", vec!["red", "green", "blue"]);
+        let red = category.get(&"red").unwrap();
+        assert_eq!(red.idx, 0);
+        let clone = red.clone();
+        assert_eq!(clone.idx, 0);
+    }
+
+    #[test]
+    fn test_debug_trait() {
+        let category = Category::new("color", vec!["red", "green", "blue"]);
+        let red = category.get(&"red").unwrap();
+        assert_eq!(format!("{:?}", red), "red");
+    }
+
+    #[test]
+    fn test_from_range_trait() {
+        let category = Category::new("color", vec!["red", "green", "blue"]);
+        let range = category.get(&"red").unwrap()..category.get(&"blue").unwrap();
+        let elements_range = CategoryElementsRange::from(range);
+        assert_eq!(elements_range.0.idx, 0);
+        assert_eq!(elements_range.1.idx, 2);
+    }
+
+    #[test]
+    fn test_ranged_trait() {
+        let category = Category::new("color", vec!["red", "green", "blue"]);
+        let elements_range = category.range();
+        let range = elements_range.range();
+        let elements_range = CategoryElementsRange::from(range);
+        assert_eq!(elements_range.0.idx, 0);
+        assert_eq!(elements_range.1.idx, 2);
+        assert_eq!(elements_range.map(&elements_range.0, (10, 20)), 12);
+        assert_eq!(elements_range.key_points(5).len(), 3);
+    }
+}

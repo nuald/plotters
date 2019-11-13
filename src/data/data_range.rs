@@ -5,6 +5,17 @@ use std::ops::Range;
 use num_traits::{One, Zero};
 
 /// Build a range that fits the data
+///
+/// - `iter`: the iterator over the data
+/// - **returns** The resulting range
+///
+/// ```rust
+/// use plotters::data::fitting_range;
+///
+/// let data = [4, 14, -2, 2, 5];
+/// let range = fitting_range(&data);
+/// assert_eq!(range, std::ops::Range { start: -2, end: 14 });
+/// ```
 pub fn fitting_range<'a, T: 'a, I: IntoIterator<Item = &'a T>>(iter: I) -> Range<T>
 where
     T: Zero + One + PartialOrd + Clone,

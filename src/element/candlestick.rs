@@ -38,7 +38,7 @@ impl<X: Clone, Y: PartialOrd> CandleStick<X, Y> {
                 (x.clone(), open),
                 (x.clone(), high),
                 (x.clone(), low),
-                (x.clone(), close),
+                (x, close),
             ],
         }
     }
