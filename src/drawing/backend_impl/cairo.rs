@@ -230,7 +230,7 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
     fn draw_text(
         &mut self,
         text: &str,
-        font: &TextStyle,
+        style: &TextStyle,
         pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         let font = &style.font;
