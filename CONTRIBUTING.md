@@ -108,6 +108,6 @@ pip install pycobertura
 Usage:
 
 ```bash
-cargo tarpaulin --all-features --run-types Tests Doctests --out Xml
-pycobertura show cobertura.xml
+cargo tarpaulin --all-features --run-types Tests Doctests -o Xml --output-dir target/test
+pycobertura show target/test/cobertura.xml
 ```
