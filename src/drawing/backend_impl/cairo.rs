@@ -287,12 +287,11 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
 mod test {
     use super::*;
     use crate::prelude::*;
-    use cairo::{Format, ImageSurface};
-    use std::io::{Cursor, Read, Seek, SeekFrom};
 
     #[test]
     fn test_draw_mesh() {
-        let surface = ImageSurface::create(Format::ARgb32, 1024, 768).unwrap();
+        let buffer: Vec<u8> = vec![];
+        let surface = cairo::PsSurface::for_stream(1024.0, 768.0, buffer);
         let cr = CairoContext::new(&surface);
         let root = CairoBackend::new(&cr, (500, 500))
             .unwrap()
@@ -308,22 +307,15 @@ mod test {
 
         chart.configure_mesh().draw().unwrap();
 
-        let mut c = Cursor::new(Vec::new());
-        surface.write_to_png(&mut c).unwrap();
-
-        c.seek(SeekFrom::Start(0)).unwrap();
-        let mut out = Vec::new();
-        c.read_to_end(&mut out).unwrap();
-        assert!(out.len() > 0);
+        let buffer = *surface.finish_output_stream().unwrap().downcast().unwrap();
+        let content = String::from_utf8(buffer).unwrap();
+        assert!(content.contains("This is a test"));
 
         /*
-            The local fonts with the same family could be different,
-            therefore pixel-based comparison won't work.
-
-            Please uncomment the line below to get the PNG image
-            if you need to manually verify the results.
+           Please uncomment the line below to get the PS file
+           if you need to manually verify the results.
+           You may want to use `ps2pdf` to get the readable PDF file.
         */
-        // let mut img = std::fs::File::create("cairo.png").unwrap();
-        // surface.write_to_png(&mut img).unwrap();
+        // std::fs::write("cairo.ps", content).unwrap();
     }
 }

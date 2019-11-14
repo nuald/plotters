@@ -66,20 +66,14 @@ bash doc-template/update-readme.sh
 
 ## Testing Notes
 
-For for the code coverage information you may want to use [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin). Please note that it works with x86_64 GNU/Linux only, and the doc tests coverage require nightly Rust.
+As the project is intended to work in various environments, it's important to test its all features. The notes below may help you with that task.
 
-Installation ([pycobertura](https://pypi.python.org/pypi/pycobertura) is used to get the detailed report about the coverage):
+### Native
 
-```bash
-cargo install cargo-tarpaulin
-pip install pycobertura
-```
-
-Usage (with `cairo-rs` feature):
+Testing all features:
 
 ```bash
-cargo tarpaulin --features cairo-rs --run-types Tests Doctests --out Xml
-pycobertura show cobertura.xml
+cargo test --all-features
 ```
 
 ### WebAssembly
@@ -98,4 +92,22 @@ Usage (only library tests are supported for now):
 
 ```bash
 cargo test --lib --target wasm32-unknown-unknown
+```
+
+### Code Coverage
+
+For for the code coverage information you may want to use [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin). Please note that it works with x86_64 GNU/Linux only, and the doc tests coverage require nightly Rust.
+
+Installation ([pycobertura](https://pypi.python.org/pypi/pycobertura) is used to get the detailed report about the coverage):
+
+```bash
+cargo install cargo-tarpaulin
+pip install pycobertura
+```
+
+Usage:
+
+```bash
+cargo tarpaulin --all-features --run-types Tests Doctests --out Xml
+pycobertura show cobertura.xml
 ```

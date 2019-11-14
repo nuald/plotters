@@ -384,3 +384,35 @@ impl Drop for SVGBackend<'_> {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_draw_mesh() {
+        let mut buffer: Vec<u8> = vec![];
+        {
+            let root = SVGBackend::with_buffer(&mut buffer, (500, 500)).into_drawing_area();
+
+            let mut chart = ChartBuilder::on(&root)
+                .caption("This is a test", ("sans-serif", 20))
+                .x_label_area_size(40)
+                .y_label_area_size(40)
+                .build_ranged(0..100, 0..100)
+                .unwrap();
+
+            chart.configure_mesh().draw().unwrap();
+        }
+
+        let content = String::from_utf8(buffer).unwrap();
+        assert!(content.contains("This is a test"));
+
+        /*
+           Please uncomment the line below to get the SVG file
+           if you need to manually verify the results.
+        */
+        std::fs::write("svg.svg", content).unwrap();
+    }
+}
