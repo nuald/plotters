@@ -63,3 +63,39 @@ use the following command to synchronize the doc to both `src/lib.rs` and `READM
 ```bash
 bash doc-template/update-readme.sh
 ```
+
+## Testing Notes
+
+For for the code coverage information you may want to use [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin). Please note that it works with x86_64 GNU/Linux only, and the doc tests coverage require nightly Rust.
+
+Installation ([pycobertura](https://pypi.python.org/pypi/pycobertura) is used to get the detailed report about the coverage):
+
+```bash
+cargo install cargo-tarpaulin
+pip install pycobertura
+```
+
+Usage (with `cairo-rs` feature):
+
+```bash
+cargo tarpaulin --features cairo-rs --run-types Tests Doctests --out Xml
+pycobertura show cobertura.xml
+```
+
+### WebAssembly
+
+Wasm target is not tested by default, and you may want to use [wasm-bindgen](https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/usage.html) CLI tool.
+
+Installation:
+
+```bash
+cargo install wasm-bindgen-cli
+```
+
+Additionally, the headless browser and its driver should be available, please see [Configuring Which Browser is Used](https://rustwasm.github.io/wasm-bindgen/wasm-bindgen-test/browsers.html#configuring-which-browser-is-used-1). For example, to use the headless Firefox, its binary (`firefox`) and [geckodriver](https://github.com/mozilla/geckodriver/releases) must be on your `$PATH`.
+
+Usage (only library tests are supported for now):
+
+```bash
+cargo test --lib --target wasm32-unknown-unknown
+```

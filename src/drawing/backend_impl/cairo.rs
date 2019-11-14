@@ -287,19 +287,12 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
 mod test {
     use super::*;
     use crate::prelude::*;
-    use cairo::{Content, RecordingSurface, Rectangle};
+    use cairo::{Format, ImageSurface};
+    use std::io::{Cursor, Read, Seek, SeekFrom};
 
     #[test]
     fn test_draw_mesh() {
-        let surface = RecordingSurface::create(
-            Content::ColorAlpha,
-            Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 1024.0,
-                height: 768.0,
-            },
-        ).unwrap();
+        let surface = ImageSurface::create(Format::ARgb32, 1024, 768).unwrap();
         let cr = CairoContext::new(&surface);
         let root = CairoBackend::new(&cr, (500, 500))
             .unwrap()
@@ -314,6 +307,23 @@ mod test {
             .unwrap();
 
         chart.configure_mesh().draw().unwrap();
-        assert_eq!(surface.ink_extents(), (0.0, 0.0, 1024.0, 768.0));
+
+        let mut c = Cursor::new(Vec::new());
+        surface.write_to_png(&mut c).unwrap();
+
+        c.seek(SeekFrom::Start(0)).unwrap();
+        let mut out = Vec::new();
+        c.read_to_end(&mut out).unwrap();
+        assert!(out.len() > 0);
+
+        /*
+            The local fonts with the same family could be different,
+            therefore pixel-based comparison won't work.
+
+            Please uncomment the line below to get the PNG image
+            if you need to manually verify the results.
+        */
+        // let mut img = std::fs::File::create("cairo.png").unwrap();
+        // surface.write_to_png(&mut img).unwrap();
     }
 }
