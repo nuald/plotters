@@ -389,6 +389,10 @@ impl Drop for SVGBackend<'_> {
 mod test {
     use super::*;
     use crate::prelude::*;
+    use std::fs;
+    use std::path::Path;
+
+    static DST_DIR: &str = "target/test/svg";
 
     #[test]
     fn test_draw_mesh() {
@@ -407,12 +411,15 @@ mod test {
         }
 
         let content = String::from_utf8(buffer).unwrap();
-        assert!(content.contains("This is a test"));
 
         /*
-           Please uncomment the line below to get the SVG file
-           if you need to manually verify the results.
+          Please use the SVG file to manually verify the results.
         */
-        std::fs::write("svg.svg", content).unwrap();
+        fs::create_dir_all(DST_DIR).unwrap();
+        let file_path = Path::new(DST_DIR).join("test_draw_mesh.svg");
+        println!("{:?} created", file_path);
+        fs::write(file_path, &content).unwrap();
+
+        assert!(content.contains("This is a test"));
     }
 }

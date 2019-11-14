@@ -287,6 +287,10 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
 mod test {
     use super::*;
     use crate::prelude::*;
+    use std::fs;
+    use std::path::Path;
+
+    static DST_DIR: &str = "target/test/cairo";
 
     #[test]
     fn test_draw_mesh() {
@@ -298,8 +302,9 @@ mod test {
             .into_drawing_area();
         root.fill(&WHITE).unwrap();
 
+        // Text could be rendered to different elements if has whitespaces
         let mut chart = ChartBuilder::on(&root)
-            .caption("This is a test", ("sans-serif", 20))
+            .caption("this-is-a-test", ("sans-serif", 20))
             .x_label_area_size(40)
             .y_label_area_size(40)
             .build_ranged(0..100, 0..100)
@@ -309,13 +314,17 @@ mod test {
 
         let buffer = *surface.finish_output_stream().unwrap().downcast().unwrap();
         let content = String::from_utf8(buffer).unwrap();
-        assert!(content.contains("This is a test"));
 
         /*
-           Please uncomment the line below to get the PS file
-           if you need to manually verify the results.
-           You may want to use `ps2pdf` to get the readable PDF file.
+          Please use the PS file to manually verify the results.
+
+          You may want to use `ps2pdf` to get the readable PDF file.
         */
-        // std::fs::write("cairo.ps", content).unwrap();
+        fs::create_dir_all(DST_DIR).unwrap();
+        let file_path = Path::new(DST_DIR).join("test_draw_mesh.ps");
+        println!("{:?} created", file_path);
+        fs::write(file_path, &content).unwrap();
+
+        assert!(content.contains("this-is-a-test"));
     }
 }

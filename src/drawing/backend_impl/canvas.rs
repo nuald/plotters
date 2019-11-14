@@ -332,21 +332,19 @@ mod test {
         let prefix = "data:image/png;base64,";
         assert!(&data_uri.starts_with(prefix));
         let b64_part = data_uri.replace(prefix, "");
-        assert!(b64_part.len() > 0);
 
         /*
-            The local fonts with the same family could be different,
-            therefore pixel-based comparison won't work.
+          Please use the base64-encoded PNG file to manually verify the results.
 
-            Please uncomment the line below to get the base64-encoded PNG image
-            if you need to manually verify the results.
-            The actual image could be created with the command like:
+          The actual image could be created with the command like:
 
-                $ base64 -di > canvas.png
+              $ base64 -di > canvas.png
 
-            It would read from stdin, so you can copy-paste the text,
-            use Ctrl-D to stop input and get canvas.png in the current directory.
+          It would read from stdin, so you can copy-paste the text,
+          use Ctrl-D to stop input and get canvas.png in the current directory.
         */
-        // console_log!("{}", b64_part);
+        console_log!("{}", b64_part);
+
+        assert!(b64_part.len() > 0);
     }
 }
