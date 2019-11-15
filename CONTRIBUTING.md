@@ -87,13 +87,15 @@ rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli
 ```
 
-Additionally, the headless browser and its driver should be available, please see [Configuring Which Browser is Used](https://rustwasm.github.io/wasm-bindgen/wasm-bindgen-test/browsers.html#configuring-which-browser-is-used-1). For example, to use the headless Firefox, its binary (`firefox`) and [geckodriver](https://github.com/mozilla/geckodriver/releases) must be on your `$PATH`.
+Additionally, the web browser and its driver should be available, please see [Configuring Which Browser is Used](https://rustwasm.github.io/wasm-bindgen/wasm-bindgen-test/browsers.html#configuring-which-browser-is-used-1). For example, to use Firefox, its binary (`firefox`) and [geckodriver](https://github.com/mozilla/geckodriver/releases) must be on your `$PATH`.
 
 Usage (only library tests are supported for now):
 
 ```bash
 cargo test --lib --target wasm32-unknown-unknown
 ```
+
+For the debugging you could set the `NO_HEADLESS=1` environment variable to run the tests using the local server instead of the headless browser.
 
 ### Code Coverage
 

@@ -331,20 +331,5 @@ mod test {
         let data_uri = canvas.to_data_url().unwrap();
         let prefix = "data:image/png;base64,";
         assert!(&data_uri.starts_with(prefix));
-        let b64_part = data_uri.replace(prefix, "");
-
-        /*
-          Please use the base64-encoded PNG file to manually verify the results.
-
-          The actual image could be created with the command like:
-
-              $ base64 -di > canvas.png
-
-          It would read from stdin, so you can copy-paste the text,
-          use Ctrl-D to stop input and get canvas.png in the current directory.
-        */
-        console_log!("{}", b64_part);
-
-        assert!(b64_part.len() > 0);
     }
 }
