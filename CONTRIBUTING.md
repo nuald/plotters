@@ -83,6 +83,7 @@ Wasm target is not tested by default, and you may want to use [wasm-bindgen](htt
 Installation:
 
 ```bash
+rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli
 ```
 
