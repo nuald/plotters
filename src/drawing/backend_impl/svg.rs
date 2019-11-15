@@ -394,6 +394,17 @@ mod test {
 
     static DST_DIR: &str = "target/test/svg";
 
+    fn save_file(name: &str, content: &str) {
+        /*
+          Please use the SVG file to manually verify the results.
+        */
+        fs::create_dir_all(DST_DIR).unwrap();
+        let file_name = format!("{}.svg", name);
+        let file_path = Path::new(DST_DIR).join(file_name);
+        println!("{:?} created", file_path);
+        fs::write(file_path, &content).unwrap();
+    }
+
     #[test]
     fn test_draw_mesh() {
         let mut buffer: Vec<u8> = vec![];
@@ -411,15 +422,43 @@ mod test {
         }
 
         let content = String::from_utf8(buffer).unwrap();
-
-        /*
-          Please use the SVG file to manually verify the results.
-        */
-        fs::create_dir_all(DST_DIR).unwrap();
-        let file_path = Path::new(DST_DIR).join("test_draw_mesh.svg");
-        println!("{:?} created", file_path);
-        fs::write(file_path, &content).unwrap();
+        save_file("test_draw_mesh", &content);
 
         assert!(content.contains("This is a test"));
+    }
+
+    #[test]
+    fn test_text_alignments() {
+        let mut buffer: Vec<u8> = vec![];
+        {
+            let mut root = SVGBackend::with_buffer(&mut buffer, (500, 500));
+
+            let style =
+                TextStyle::from(("sans-serif", 20).into_font()).alignment(TextAlignment::Right);
+            root.draw_text("right-align", &style, (150, 50)).unwrap();
+
+            let style = style.alignment(TextAlignment::Center);
+            root.draw_text("center-align", &style, (150, 150)).unwrap();
+
+            let style = style.alignment(TextAlignment::Left);
+            root.draw_text("left-align", &style, (150, 200)).unwrap();
+        }
+
+        let content = String::from_utf8(buffer).unwrap();
+        save_file("test_text_alignments", &content);
+
+        for svg_line in content.split("</text>") {
+            if let Some(anchor_and_rest) = svg_line.split("text-anchor=\"").nth(1) {
+                if anchor_and_rest.starts_with("end") {
+                    assert!(anchor_and_rest.contains("right-align"))
+                }
+                if anchor_and_rest.starts_with("middle") {
+                    assert!(anchor_and_rest.contains("center-align"))
+                }
+                if anchor_and_rest.starts_with("start") {
+                    assert!(anchor_and_rest.contains("left-align"))
+                }
+            }
+        }
     }
 }
