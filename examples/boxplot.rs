@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut colors = (0..).map(Palette99::pick);
-    let mut offsets = (-7..).step_by(14);
+    let mut offsets = (-12..).step_by(24);
     let mut series = HashMap::new();
     for x in dataset.iter() {
         let entry = series
@@ -70,7 +70,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .x_label_area_size(40)
         .y_label_area_size(120)
         .caption("Ping Boxplot", ("sans-serif", 20).into_font())
-        .build_ranged(0.0..values_range.end + 1.0, category.range())?;
+        .build_ranged(
+            values_range.start - 1.0..values_range.end + 1.0,
+            category.range(),
+        )?;
 
     chart
         .configure_mesh()
@@ -84,7 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         chart
             .draw_series(values.iter().map(|x| {
                 Boxplot::new_horizontal(category.get(&x.0).unwrap(), &x.1)
-                    .width(10)
+                    .width(20)
                     .whisker_width(0.5)
                     .style(style)
                     .offset(*offset)
@@ -102,28 +105,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let drawing_areas = lower.split_evenly((1, 2));
     let (left, right) = (&drawing_areas[0], &drawing_areas[1]);
 
-    let values = Quartiles::new(&[6, 7, 15, 36, 39, 40, 41, 42, 43, 47, 49]);
+    let quartiles_a = Quartiles::new(&[
+        6.0, 7.0, 15.9, 36.9, 39.0, 40.0, 41.0, 42.0, 43.0, 47.0, 49.0,
+    ]);
+    let quartiles_b = Quartiles::new(&[16.0, 17.0, 50.0, 60.0, 40.2, 41.3, 42.7, 43.3, 47.0]);
+    let category_ab = Category::new("", vec!["a", "b"]);
+    let values_range = fitting_range(
+        quartiles_a
+            .values()
+            .iter()
+            .chain(quartiles_b.values().iter()),
+    );
     let mut chart = ChartBuilder::on(&left)
         .x_label_area_size(40)
         .y_label_area_size(40)
         .caption("Vertical Boxplot", ("sans-serif", 20).into_font())
-        .build_ranged(0..2, 0f32..100f32)?;
+        .build_ranged(
+            category_ab.get(&"a").unwrap()..category_ab.get(&"b").unwrap(),
+            values_range.start - 10.0..values_range.end + 10.0,
+        )?;
 
     chart.configure_mesh().line_style_2(&WHITE).draw()?;
-    chart
-        .plotting_area()
-        .draw(&Boxplot::new_vertical(1, &values))?;
+    let area = chart.plotting_area();
+    area.draw(&Boxplot::new_vertical(
+        category_ab.get(&"a").unwrap(),
+        &quartiles_a,
+    ))?;
+    area.draw(&Boxplot::new_vertical(
+        category_ab.get(&"b").unwrap(),
+        &quartiles_b,
+    ))?;
 
     let mut chart = ChartBuilder::on(&right)
         .x_label_area_size(40)
         .y_label_area_size(40)
         .caption("Horizontal Boxplot", ("sans-serif", 20).into_font())
-        .build_ranged(0f32..100f32, 0..2)?;
+        .build_ranged(-30f32..90f32, 0..3)?;
 
     chart.configure_mesh().line_style_2(&WHITE).draw()?;
-    chart
-        .plotting_area()
-        .draw(&Boxplot::new_horizontal(1, &values))?;
+    let area = chart.plotting_area();
+    area.draw(&Boxplot::new_horizontal(1, &quartiles_a))?;
+    area.draw(&Boxplot::new_horizontal(2, &Quartiles::new(&[30])))?;
 
     Ok(())
 }

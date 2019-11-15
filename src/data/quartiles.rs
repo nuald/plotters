@@ -28,9 +28,6 @@ impl Quartiles {
     ///
     /// let quartiles = Quartiles::new(&[7, 15, 36, 39, 40, 41]);
     /// assert_eq!(quartiles.median(), 37.5);
-    ///
-    /// let quartiles = Quartiles::new(&[15.0]);
-    /// assert_eq!(quartiles.median(), 15.0);
     /// ```
     pub fn new<T: Into<f64> + Copy + PartialOrd>(s: &[T]) -> Self {
         if s.len() == 1 {
@@ -98,5 +95,33 @@ impl Quartiles {
     /// ```
     pub fn median(&self) -> f64 {
         self.median
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn test_empty_input() {
+        let empty_array: [i32; 0] = [];
+        Quartiles::new(&empty_array);
+    }
+
+    #[test]
+    fn test_low_inputs() {
+        assert_eq!(
+            Quartiles::new(&[15.0]).values(),
+            [15.0, 15.0, 15.0, 15.0, 15.0]
+        );
+        assert_eq!(
+            Quartiles::new(&[10, 20]).values(),
+            [-5.0, 10.0, 15.0, 20.0, 35.0]
+        );
+        assert_eq!(
+            Quartiles::new(&[10, 20, 30]).values(),
+            [-20.0, 10.0, 20.0, 30.0, 60.0]
+        );
     }
 }

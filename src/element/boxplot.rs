@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::data::Quartiles;
 use crate::drawing::backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 use crate::element::{Drawable, PointCollection};
-use crate::style::{ShapeStyle, GREEN};
+use crate::style::{ShapeStyle, BLACK};
 
 /// The boxplot orientation trait
 pub trait BoxplotOrient<K, V> {
@@ -74,7 +74,7 @@ impl<K: Clone> Boxplot<K, BoxplotOrientV<K, f32>> {
     /// ```
     pub fn new_vertical(key: K, quartiles: &Quartiles) -> Self {
         Self {
-            style: Into::<ShapeStyle>::into(&GREEN),
+            style: Into::<ShapeStyle>::into(&BLACK),
             width: DEFAULT_WIDTH,
             whisker_width: 1.0,
             offset: 0.0,
@@ -100,7 +100,7 @@ impl<K: Clone> Boxplot<K, BoxplotOrientH<K, f32>> {
     /// ```
     pub fn new_horizontal(key: K, quartiles: &Quartiles) -> Self {
         Self {
-            style: Into::<ShapeStyle>::into(&GREEN),
+            style: Into::<ShapeStyle>::into(&BLACK),
             width: DEFAULT_WIDTH,
             whisker_width: 1.0,
             offset: 0.0,
