@@ -3,7 +3,9 @@ use cairo::{Context as CairoContext, FontSlant, FontWeight, Status as CairoStatu
 #[allow(unused_imports)]
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 #[allow(unused_imports)]
-use crate::style::{Color, FontStyle, FontTransform, RGBAColor, TextStyle};
+use crate::style::{
+    Color, FontStyle, FontTransform, RGBAColor, TextAlignment, TextStyle, VerticalAlignment,
+};
 
 /// The drawing backend that is backed with a Cairo context
 pub struct CairoBackend<'a> {
@@ -292,6 +294,19 @@ mod test {
 
     static DST_DIR: &str = "target/test/cairo";
 
+    fn save_file(name: &str, content: &str) {
+        /*
+          Please use the PS file to manually verify the results.
+
+          You may want to use `ps2pdf` to get the readable PDF file.
+        */
+        fs::create_dir_all(DST_DIR).unwrap();
+        let file_name = format!("{}.ps", name);
+        let file_path = Path::new(DST_DIR).join(file_name);
+        println!("{:?} created", file_path);
+        fs::write(file_path, &content).unwrap();
+    }
+
     #[test]
     fn test_draw_mesh() {
         let buffer: Vec<u8> = vec![];
@@ -314,17 +329,80 @@ mod test {
 
         let buffer = *surface.finish_output_stream().unwrap().downcast().unwrap();
         let content = String::from_utf8(buffer).unwrap();
+        save_file("test_draw_mesh", &content);
 
-        /*
-          Please use the PS file to manually verify the results.
+        assert!(content.contains("this-is-a-test"));
+    }
 
-          You may want to use `ps2pdf` to get the readable PDF file.
-        */
-        fs::create_dir_all(DST_DIR).unwrap();
-        let file_path = Path::new(DST_DIR).join("test_draw_mesh.ps");
-        println!("{:?} created", file_path);
-        fs::write(file_path, &content).unwrap();
+    #[test]
+    fn test_text_draw() {
+        let buffer: Vec<u8> = vec![];
+        let surface = cairo::PsSurface::for_stream(1400.0, 1100.0, buffer);
+        let cr = CairoContext::new(&surface);
+        let root = CairoBackend::new(&cr, (1400, 1100))
+            .unwrap()
+            .into_drawing_area();
 
-        //assert!(content.contains("this-is-a-test"));
+        let mut chart = ChartBuilder::on(&root)
+            .caption("Alignment combinations", ("sans-serif", 20))
+            .set_all_label_area_size(40)
+            .build_ranged(0..140, 0..110)
+            .unwrap();
+
+        chart
+            .configure_mesh()
+            .disable_x_mesh()
+            .disable_y_mesh()
+            .x_desc("X Axis")
+            .y_desc("Y Axis")
+            .draw()
+            .unwrap();
+
+        for (dx, trans) in [
+            FontTransform::None,
+            FontTransform::Rotate90,
+            FontTransform::Rotate180,
+            FontTransform::Rotate270,
+        ]
+        .iter()
+        .enumerate()
+        {
+            for (dy1, h_align) in [
+                TextAlignment::Left,
+                TextAlignment::Right,
+                TextAlignment::Center,
+            ]
+            .iter()
+            .enumerate()
+            {
+                for (dy2, v_align) in [
+                    VerticalAlignment::Top,
+                    VerticalAlignment::Middle,
+                    VerticalAlignment::Bottom,
+                ]
+                .iter()
+                .enumerate()
+                {
+                    let x = 100 + dx as i32 * 300;
+                    let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
+                    root.draw(&crate::element::Rectangle::new(
+                        [(x, y), (x + 290, y + 90)],
+                        &BLACK.mix(0.5),
+                    ))
+                    .unwrap();
+                    let style = TextStyle::from(("sans-serif", 20).into_font())
+                        .alignment(*h_align)
+                        .vertical_alignment(*v_align)
+                        .transform(trans.clone());
+                    root.draw_text("test", &style, (x, y)).unwrap();
+                }
+            }
+        }
+
+        let buffer = *surface.finish_output_stream().unwrap().downcast().unwrap();
+        let content = String::from_utf8(buffer).unwrap();
+        save_file("test_text_draw", &content);
+
+        assert_eq!(content.matches("test").count(), 36);
     }
 }
