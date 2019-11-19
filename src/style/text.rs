@@ -4,14 +4,6 @@ use super::size::{HasDimension, SizeDesc};
 use super::BLACK;
 
 /// The alignment of the text.
-///
-/// Used to determine the invariant (anchor) points for backends
-/// which render the text on the client side like SVG. The current
-/// implementation calculates the font inked rectangle using
-/// fontkit-based glyphs, but the client side (i.e. web browsers)
-/// may use different fonts for the same font family. As the calculations
-/// assume some invariant points, we may use the same on the client
-/// side to properly position the text.
 #[derive(Copy, Clone)]
 pub enum TextAlignment {
     /// Left alignment
@@ -22,12 +14,24 @@ pub enum TextAlignment {
     Center,
 }
 
+/// The vertical alignment of the text.
+#[derive(Copy, Clone)]
+pub enum VerticalAlignment {
+    /// Top alignment
+    Top,
+    /// Middle alignment
+    Middle,
+    /// Bottom alignment
+    Bottom,
+}
+
 /// Style of a text
 #[derive(Clone)]
 pub struct TextStyle<'a> {
     pub font: FontDesc<'a>,
     pub color: RGBAColor,
     pub alignment: TextAlignment,
+    pub vertical_alignment: VerticalAlignment,
 }
 
 pub trait IntoTextStyle<'a> {
@@ -92,6 +96,7 @@ impl<'a> TextStyle<'a> {
             font: self.font.clone(),
             color: color.to_rgba(),
             alignment: self.alignment,
+            vertical_alignment: self.vertical_alignment,
         }
     }
 
@@ -110,12 +115,13 @@ impl<'a> TextStyle<'a> {
             font: self.font.clone().transform(trans),
             color: self.color.clone(),
             alignment: self.alignment,
+            vertical_alignment: self.vertical_alignment,
         }
     }
 
     /// Sets the text alignment of the style.
     ///
-    /// - `color`: The required alignment
+    /// - `alignment`: The required alignment
     /// - **returns** The up-to-dated text style
     ///
     /// ```rust
@@ -129,6 +135,28 @@ impl<'a> TextStyle<'a> {
             font: self.font.clone(),
             color: self.color.clone(),
             alignment,
+            vertical_alignment: self.vertical_alignment
+        }
+    }
+
+
+    /// Sets the vertical text alignment of the style.
+    ///
+    /// - `alignment`: The required alignment
+    /// - **returns** The up-to-dated text style
+    ///
+    /// ```rust
+    /// use plotters::prelude::*;
+    /// use plotters::style::VerticalAlignment;
+    ///
+    /// let style = TextStyle::from(("sans-serif", 20).into_font()).vertical_alignment(VerticalAlignment::Top);
+    /// ```
+    pub fn vertical_alignment(&self, vertical_alignment: VerticalAlignment) -> Self {
+        Self {
+            font: self.font.clone(),
+            color: self.color.clone(),
+            alignment: self.alignment,
+            vertical_alignment,
         }
     }
 }
@@ -146,6 +174,7 @@ impl<'a, T: Into<FontDesc<'a>>> From<T> for TextStyle<'a> {
             font: font.into(),
             color: BLACK.to_rgba(),
             alignment: TextAlignment::Left,
+            vertical_alignment: VerticalAlignment::Top,
         }
     }
 }
