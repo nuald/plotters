@@ -322,17 +322,35 @@ impl PixelFormat for RGBPixel {
         // thus, this type purning should work for both LE and BE CPUs
         let (p1, p2, p3): (u64, u64, u64) = unsafe {
             std::mem::transmute([
-                u16::from(r), u16::from(b), u16::from(g), u16::from(r), // QW1
-                u16::from(b), u16::from(g), u16::from(r), u16::from(b), // QW2
-                u16::from(g), u16::from(r), u16::from(b), u16::from(g), // QW3
+                u16::from(r),
+                u16::from(b),
+                u16::from(g),
+                u16::from(r), // QW1
+                u16::from(b),
+                u16::from(g),
+                u16::from(r),
+                u16::from(b), // QW2
+                u16::from(g),
+                u16::from(r),
+                u16::from(b),
+                u16::from(g), // QW3
             ])
         };
 
         let (q1, q2, q3): (u64, u64, u64) = unsafe {
             std::mem::transmute([
-                u16::from(g), u16::from(r), u16::from(b), u16::from(g), // QW1
-                u16::from(r), u16::from(b), u16::from(g), u16::from(r), // QW2
-                u16::from(b), u16::from(g), u16::from(r), u16::from(b), // QW3
+                u16::from(g),
+                u16::from(r),
+                u16::from(b),
+                u16::from(g), // QW1
+                u16::from(r),
+                u16::from(b),
+                u16::from(g),
+                u16::from(r), // QW2
+                u16::from(b),
+                u16::from(g),
+                u16::from(r),
+                u16::from(b), // QW3
             ])
         };
 
@@ -539,13 +557,19 @@ impl PixelFormat for BGRXPixel {
         // thus, this type purning should work for both LE and BE CPUs
         let p: u64 = unsafe {
             std::mem::transmute([
-                u16::from(b), u16::from(r), u16::from(b), u16::from(r), // QW1
+                u16::from(b),
+                u16::from(r),
+                u16::from(b),
+                u16::from(r), // QW1
             ])
         };
 
         let q: u64 = unsafe {
             std::mem::transmute([
-                u16::from(g), 0u16, u16::from(g), 0u16, // QW1
+                u16::from(g),
+                0u16,
+                u16::from(g),
+                0u16, // QW1
             ])
         };
 

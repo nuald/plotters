@@ -135,10 +135,9 @@ impl<'a> TextStyle<'a> {
             font: self.font.clone(),
             color: self.color.clone(),
             alignment,
-            vertical_alignment: self.vertical_alignment
+            vertical_alignment: self.vertical_alignment,
         }
     }
-
 
     /// Sets the vertical text alignment of the style.
     ///

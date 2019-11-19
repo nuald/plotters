@@ -7,7 +7,9 @@ use svg::node::element::{Circle, Line, Polygon, Polyline, Rectangle, Text};
 use svg::Document;
 
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
-use crate::style::{Color, FontStyle, FontTransform, RGBAColor, TextAlignment, TextStyle};
+use crate::style::{
+    Color, FontStyle, FontTransform, RGBAColor, TextAlignment, TextStyle, VerticalAlignment,
+};
 
 use std::io::{Cursor, Error};
 use std::path::Path;
@@ -460,5 +462,74 @@ mod test {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_text_draw() {
+        let mut buffer: Vec<u8> = vec![];
+        {
+            let root = SVGBackend::with_buffer(&mut buffer, (1400, 1100)).into_drawing_area();
+
+            let mut chart = ChartBuilder::on(&root)
+                .caption("Alignment combinations", ("sans-serif", 20))
+                .set_all_label_area_size(40)
+                .build_ranged(0..140, 0..110)
+                .unwrap();
+
+            chart
+                .configure_mesh()
+                .disable_x_mesh()
+                .disable_y_mesh()
+                .x_desc("X Axis")
+                .y_desc("Y Axis")
+                .draw()
+                .unwrap();
+
+            for (dx, trans) in [
+                FontTransform::None,
+                FontTransform::Rotate90,
+                FontTransform::Rotate180,
+                FontTransform::Rotate270,
+            ]
+            .iter()
+            .enumerate()
+            {
+                for (dy1, h_align) in [
+                    TextAlignment::Left,
+                    TextAlignment::Right,
+                    TextAlignment::Center,
+                ]
+                .iter()
+                .enumerate()
+                {
+                    for (dy2, v_align) in [
+                        VerticalAlignment::Top,
+                        VerticalAlignment::Middle,
+                        VerticalAlignment::Bottom,
+                    ]
+                    .iter()
+                    .enumerate()
+                    {
+                        let x = 100 + dx as i32 * 300;
+                        let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
+                        root.draw(&crate::element::Rectangle::new(
+                            [(x, y), (x + 290, y + 90)],
+                            &BLACK.mix(0.5),
+                        ))
+                        .unwrap();
+                        let style = TextStyle::from(("sans-serif", 20).into_font())
+                            .alignment(*h_align)
+                            .vertical_alignment(*v_align)
+                            .transform(trans.clone());
+                        root.draw_text("test", &style, (x, y)).unwrap();
+                    }
+                }
+            }
+        }
+
+        let content = String::from_utf8(buffer).unwrap();
+        save_file("test_text_draw", &content);
+
+        assert_eq!(content.matches("test").count(), 36);
     }
 }
