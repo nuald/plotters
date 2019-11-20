@@ -178,7 +178,7 @@ pub trait DrawingBackend: Sized {
     /// Draw a text on the drawing backend
     /// - `text`: The text to draw
     /// - `style`: The text style
-    /// - `pos` : The position backend
+    /// - `pos` : The text anchor point
     fn draw_text(
         &mut self,
         text: &str,

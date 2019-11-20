@@ -255,16 +255,26 @@ impl DrawingBackend for CanvasBackend {
 
         if degree != 0.0 {
             self.context.save();
-            let layout = font.layout_box(text).map_err(DrawingErrorKind::FontError)?;
-            let offset = font.get_transform().offset(layout);
-            self.context
-                .translate(f64::from(x + offset.0), f64::from(y + offset.1))?;
+            self.context.translate(f64::from(x), f64::from(y))?;
             self.context.rotate(degree)?;
             x = 0;
             y = 0;
         }
 
-        self.context.set_text_baseline("bottom");
+        let text_baseline = match style.pos.v_pos {
+            VPos::Top => "top",
+            VPos::Center => "middle",
+            VPos::Bottom => "bottom",
+        };
+        self.context.set_text_baseline(text_baseline);
+
+        let text_align = match style.pos.h_pos {
+            HPos::Left => "start",
+            HPos::Right => "end",
+            HPos::Center => "center",
+        };
+        self.context.set_text_align(text_align);
+
         self.context
             .set_fill_style(&make_canvas_color(color.clone()));
         self.context.set_font(&format!(
@@ -273,8 +283,7 @@ impl DrawingBackend for CanvasBackend {
             font.get_size(),
             font.get_name()
         ));
-        self.context
-            .fill_text(text, f64::from(x), f64::from(y) + font.get_size())?;
+        self.context.fill_text(text, f64::from(x), f64::from(y))?;
 
         if degree != 0.0 {
             self.context.restore();
@@ -287,6 +296,7 @@ impl DrawingBackend for CanvasBackend {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::element::Circle;
     use crate::prelude::*;
     use wasm_bindgen_test::wasm_bindgen_test_configure;
     use wasm_bindgen_test::*;
@@ -366,11 +376,7 @@ mod test {
                 for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
                     let x = 100 + dx as i32 * 300;
                     let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
-                    root.draw(&crate::element::Rectangle::new(
-                        [(x, y), (x + 290, y + 90)],
-                        &BLACK.mix(0.5),
-                    ))
-                    .unwrap();
+                    root.draw(&Circle::new((x, y), 3, &BLACK.mix(0.5))).unwrap();
                     let style = TextStyle::from(("sans-serif", 20).into_font())
                         .pos(Pos::new(*h_align, *v_align))
                         .transform(trans.clone());

@@ -2,6 +2,7 @@ use cairo::{Context as CairoContext, FontSlant, FontWeight, Status as CairoStatu
 
 #[allow(unused_imports)]
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
+use crate::style::text_anchor::{HPos, VPos};
 #[allow(unused_imports)]
 use crate::style::{Color, FontStyle, FontTransform, RGBAColor, TextStyle};
 
@@ -209,6 +210,7 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         self.set_color(&style.as_color())?;
         self.set_stroke_width(style.stroke_width())?;
 
+        self.call_cairo(|c| c.new_sub_path())?;
         self.call_cairo(|c| {
             c.arc(
                 f64::from(center.0),
@@ -245,12 +247,9 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         } / 180.0
             * std::f64::consts::PI;
 
-        let layout = font.layout_box(text).map_err(DrawingErrorKind::FontError)?;
-
         if degree != 0.0 {
             self.call_cairo(|c| c.save())?;
-            let offset = font.get_transform().offset(layout);
-            self.call_cairo(|c| c.translate(f64::from(x + offset.0), f64::from(y + offset.1)))?;
+            self.call_cairo(|c| c.translate(f64::from(x), f64::from(y)))?;
             self.call_cairo(|c| c.rotate(degree))?;
             x = 0;
             y = 0;
@@ -273,7 +272,21 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         let actual_size = font.get_size();
         self.call_cairo(|c| c.set_font_size(actual_size))?;
         self.set_color(&color)?;
-        self.call_cairo(|c| c.move_to(f64::from(x), f64::from(y - (layout.0).1)))?;
+
+        self.call_cairo(|c| {
+            let extents = c.text_extents(text);
+            let dx = match style.pos.h_pos {
+                HPos::Left => 0.0,
+                HPos::Right => -(extents.width + extents.x_bearing),
+                HPos::Center => -(extents.width / 2.0 + extents.x_bearing),
+            };
+            let dy = match style.pos.v_pos {
+                VPos::Top => extents.height,
+                VPos::Center => extents.height / 2.0,
+                VPos::Bottom => 0.0,
+            };
+            c.move_to(f64::from(x) + dx, f64::from(y) + dy);
+        })?;
         self.call_cairo(|c| c.show_text(text))?;
 
         if degree != 0.0 {
@@ -370,11 +383,7 @@ mod test {
                 for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
                     let x = 100 + dx as i32 * 300;
                     let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
-                    root.draw(&crate::element::Rectangle::new(
-                        [(x, y), (x + 290, y + 90)],
-                        &BLACK.mix(0.5),
-                    ))
-                    .unwrap();
+                    root.draw(&Circle::new((x, y), 3, &BLACK.mix(0.5))).unwrap();
                     let style = TextStyle::from(("sans-serif", 20).into_font())
                         .pos(Pos::new(*h_align, *v_align))
                         .transform(trans.clone());
