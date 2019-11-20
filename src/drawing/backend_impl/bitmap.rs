@@ -1375,58 +1375,73 @@ fn test_bitmap_blit() {
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "image"))]
 #[cfg(test)]
-#[test]
-fn test_text_draw() {
+mod test {
     use crate::prelude::*;
     use crate::style::text_anchor::{HPos, Pos, VPos};
+    use image::{ImageBuffer, Rgb};
     use std::fs;
     use std::path::Path;
 
     static DST_DIR: &str = "target/test/bitmap";
-    fs::create_dir_all(DST_DIR).unwrap();
-    let file_path = Path::new(DST_DIR).join("test_text_draw.png");
 
-    let root = BitMapBackend::new(&file_path, (1400, 1100)).into_drawing_area();
-    root.fill(&WHITE).unwrap();
+    fn checked_save_file(name: &str, content: &[u8], w: u32, h: u32) {
+        /*
+          Please use the PNG file to manually verify the results.
+        */
+        assert!(content.iter().any(|x| *x != 0));
+        fs::create_dir_all(DST_DIR).unwrap();
+        let file_name = format!("{}.png", name);
+        let file_path = Path::new(DST_DIR).join(file_name);
+        println!("{:?} created", file_path);
+        let img = ImageBuffer::<Rgb<u8>, &[u8]>::from_raw(w, h, content).unwrap();
+        img.save(&file_path).unwrap();
+    }
 
-    let mut chart = ChartBuilder::on(&root)
-        .caption("Alignment combinations", ("sans-serif", 20))
-        .set_all_label_area_size(40)
-        .build_ranged(0..140, 0..110)
-        .unwrap();
+    #[test]
+    fn test_text_draw() {
+        let (width, height) = (1000, 500);
+        let mut buffer = vec![0; (width * height * 3) as usize];
+        {
+            let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
+            root.fill(&WHITE).unwrap();
 
-    chart
-        .configure_mesh()
-        .disable_x_mesh()
-        .disable_y_mesh()
-        .x_desc("X Axis")
-        .y_desc("Y Axis")
-        .draw()
-        .unwrap();
-
-    for (dx, trans) in [
-        FontTransform::None,
-        FontTransform::Rotate90,
-        FontTransform::Rotate180,
-        FontTransform::Rotate270,
-    ]
-    .iter()
-    .enumerate()
-    {
-        for (dy1, h_align) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
-            for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
-                let x = 100 + dx as i32 * 300;
-                let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
-                root.draw(&crate::element::Rectangle::new(
-                    [(x, y), (x + 290, y + 90)],
-                    &BLACK.mix(0.5),
-                ))
+            let mut chart = ChartBuilder::on(&root)
+                .caption("All anchor point positions", ("sans-serif", 20))
+                .set_all_label_area_size(40)
+                .build_ranged(0..140, 0..110)
                 .unwrap();
-                let style = TextStyle::from(("sans-serif", 20).into_font())
-                    .pos(Pos::new(*h_align, *v_align))
-                    .transform(trans.clone());
-                root.draw_text("test", &style, (x, y)).unwrap();
+
+            chart
+                .configure_mesh()
+                .disable_x_mesh()
+                .disable_y_mesh()
+                .x_desc("X Axis")
+                .y_desc("Y Axis")
+                .draw()
+                .unwrap();
+
+            for (dy, trans) in [
+                FontTransform::None,
+                FontTransform::Rotate90,
+                FontTransform::Rotate180,
+                FontTransform::Rotate270,
+            ]
+            .iter()
+            .enumerate()
+            {
+                for (dx1, h_pos) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
+                    for (dx2, v_pos) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
+                        let x = 100_i32 + (dx1 as i32 * 3 + dx2 as i32) * 100;
+                        let y = 100 + dy as i32 * 100;
+                        root.draw(&Circle::new((x, y), 3, &BLACK.mix(0.5))).unwrap();
+                        let style = TextStyle::from(("sans-serif", 20).into_font())
+                            .pos(Pos::new(*h_pos, *v_pos))
+                            .transform(trans.clone());
+                        root.draw_text("test", &style, (x, y)).unwrap();
+                    }
+                }
             }
         }
+        checked_save_file("test_text_draw", &buffer, width, height);
     }
 }

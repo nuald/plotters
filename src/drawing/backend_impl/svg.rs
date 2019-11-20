@@ -399,10 +399,11 @@ mod test {
 
     static DST_DIR: &str = "target/test/svg";
 
-    fn save_file(name: &str, content: &str) {
+    fn checked_save_file(name: &str, content: &str) {
         /*
           Please use the SVG file to manually verify the results.
         */
+        assert!(!content.is_empty());
         fs::create_dir_all(DST_DIR).unwrap();
         let file_name = format!("{}.svg", name);
         let file_path = Path::new(DST_DIR).join(file_name);
@@ -427,7 +428,7 @@ mod test {
         }
 
         let content = String::from_utf8(buffer).unwrap();
-        save_file("test_draw_mesh", &content);
+        checked_save_file("test_draw_mesh", &content);
 
         assert!(content.contains("This is a test"));
     }
@@ -450,7 +451,7 @@ mod test {
         }
 
         let content = String::from_utf8(buffer).unwrap();
-        save_file("test_text_alignments", &content);
+        checked_save_file("test_text_alignments", &content);
 
         for svg_line in content.split("</text>") {
             if let Some(anchor_and_rest) = svg_line.split("text-anchor=\"").nth(1) {
@@ -471,10 +472,10 @@ mod test {
     fn test_text_draw() {
         let mut buffer: Vec<u8> = vec![];
         {
-            let root = SVGBackend::with_buffer(&mut buffer, (1400, 1100)).into_drawing_area();
+            let root = SVGBackend::with_buffer(&mut buffer, (1000, 500)).into_drawing_area();
 
             let mut chart = ChartBuilder::on(&root)
-                .caption("Alignment combinations", ("sans-serif", 20))
+                .caption("All anchor point positions", ("sans-serif", 20))
                 .set_all_label_area_size(40)
                 .build_ranged(0..140, 0..110)
                 .unwrap();
@@ -488,7 +489,7 @@ mod test {
                 .draw()
                 .unwrap();
 
-            for (dx, trans) in [
+            for (dy, trans) in [
                 FontTransform::None,
                 FontTransform::Rotate90,
                 FontTransform::Rotate180,
@@ -497,14 +498,13 @@ mod test {
             .iter()
             .enumerate()
             {
-                for (dy1, h_align) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
-                    for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate()
-                    {
-                        let x = 100 + dx as i32 * 300;
-                        let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
+                for (dx1, h_pos) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
+                    for (dx2, v_pos) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
+                        let x = 100_i32 + (dx1 as i32 * 3 + dx2 as i32) * 100;
+                        let y = 100 + dy as i32 * 100;
                         root.draw(&Circle::new((x, y), 3, &BLACK.mix(0.5))).unwrap();
                         let style = TextStyle::from(("sans-serif", 20).into_font())
-                            .pos(Pos::new(*h_align, *v_align))
+                            .pos(Pos::new(*h_pos, *v_pos))
                             .transform(trans.clone());
                         root.draw_text("test", &style, (x, y)).unwrap();
                     }
@@ -513,7 +513,7 @@ mod test {
         }
 
         let content = String::from_utf8(buffer).unwrap();
-        save_file("test_text_draw", &content);
+        checked_save_file("test_text_draw", &content);
 
         assert_eq!(content.matches("test").count(), 36);
     }

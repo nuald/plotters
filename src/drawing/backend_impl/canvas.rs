@@ -300,21 +300,38 @@ mod test {
     use crate::prelude::*;
     use wasm_bindgen_test::wasm_bindgen_test_configure;
     use wasm_bindgen_test::*;
+    use web_sys::Document;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[wasm_bindgen_test]
-    fn test_draw_mesh() {
-        let document = web_sys::window().unwrap().document().unwrap();
+    fn create_canvas(document: &Document, width: u32, height: u32) -> HtmlCanvasElement {
         let canvas = document
             .create_element("canvas")
             .unwrap()
-            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .dyn_into::<HtmlCanvasElement>()
             .unwrap();
         document.body().unwrap().append_child(&canvas).unwrap();
-        canvas.set_width(100);
-        canvas.set_height(100);
+        canvas.set_attribute("id", "canvas-id").unwrap();
+        canvas.set_width(width);
+        canvas.set_height(height);
+        canvas
+    }
 
+    fn check_content(document: &Document) {
+        let canvas = document
+            .get_element_by_id("canvas-id")
+            .unwrap()
+            .dyn_into::<HtmlCanvasElement>()
+            .unwrap();
+        let data_uri = canvas.to_data_url().unwrap();
+        let prefix = "data:image/png;base64,";
+        assert!(&data_uri.starts_with(prefix));
+    }
+
+    #[wasm_bindgen_test]
+    fn test_draw_mesh() {
+        let document = window().unwrap().document().unwrap();
+        let canvas = create_canvas(&document, 500, 500);
         let backend = CanvasBackend::with_canvas_object(canvas).expect("cannot find canvas");
         let root = backend.into_drawing_area();
 
@@ -331,25 +348,18 @@ mod test {
             .y_labels(3)
             .draw()
             .unwrap();
+        check_content(&document);
     }
 
     #[wasm_bindgen_test]
     fn test_text_draw() {
-        let document = web_sys::window().unwrap().document().unwrap();
-        let canvas = document
-            .create_element("canvas")
-            .unwrap()
-            .dyn_into::<web_sys::HtmlCanvasElement>()
-            .unwrap();
-        document.body().unwrap().append_child(&canvas).unwrap();
-        canvas.set_width(1400);
-        canvas.set_height(1100);
-
+        let document = window().unwrap().document().unwrap();
+        let canvas = create_canvas(&document, 1000, 500);
         let backend = CanvasBackend::with_canvas_object(canvas).expect("cannot find canvas");
         let root = backend.into_drawing_area();
 
         let mut chart = ChartBuilder::on(&root)
-            .caption("Alignment combinations", ("sans-serif", 20))
+            .caption("All anchor point positions", ("sans-serif", 20))
             .set_all_label_area_size(40)
             .build_ranged(0..140, 0..110)
             .unwrap();
@@ -363,7 +373,7 @@ mod test {
             .draw()
             .unwrap();
 
-        for (dx, trans) in [
+        for (dy, trans) in [
             FontTransform::None,
             FontTransform::Rotate90,
             FontTransform::Rotate180,
@@ -372,17 +382,18 @@ mod test {
         .iter()
         .enumerate()
         {
-            for (dy1, h_align) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
-                for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
-                    let x = 100 + dx as i32 * 300;
-                    let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
+            for (dx1, h_pos) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
+                for (dx2, v_pos) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
+                    let x = 100_i32 + (dx1 as i32 * 3 + dx2 as i32) * 100;
+                    let y = 100 + dy as i32 * 100;
                     root.draw(&Circle::new((x, y), 3, &BLACK.mix(0.5))).unwrap();
                     let style = TextStyle::from(("sans-serif", 20).into_font())
-                        .pos(Pos::new(*h_align, *v_align))
+                        .pos(Pos::new(*h_pos, *v_pos))
                         .transform(trans.clone());
                     root.draw_text("test", &style, (x, y)).unwrap();
                 }
             }
         }
+        check_content(&document);
     }
 }

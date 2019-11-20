@@ -43,9 +43,9 @@ pub mod text_anchor {
         /// - **returns** The newly created text anchor position
         ///
         /// ```rust
-        /// use plotters::prelude::*;
+        /// use plotters::style::text_anchor::{Pos, HPos, VPos};
         ///
-        /// let pos = Pos::new(HPos::Left, v_pos: VPos::Top);
+        /// let pos = Pos::new(HPos::Left, VPos::Top);
         /// ```
         pub fn new(h_pos: HPos, v_pos: VPos) -> Self {
             Pos { h_pos, v_pos }
@@ -56,11 +56,9 @@ pub mod text_anchor {
         /// - **returns** The default text anchor position
         ///
         /// ```rust
-        /// use plotters::prelude::*;
+        /// use plotters::style::text_anchor::{Pos, HPos, VPos};
         ///
         /// let pos = Pos::default();
-        /// assert_eq!(pos.h_pos, HPos::Left);
-        /// assert_eq!(pos.v_pos, HPos::Top);
         /// ```
         pub fn default() -> Self {
             Pos {
