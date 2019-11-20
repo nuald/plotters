@@ -1373,11 +1373,12 @@ fn test_bitmap_blit() {
     }
 }
 
+#[cfg(all(not(target_arch = "wasm32"), feature = "image"))]
 #[cfg(test)]
 #[test]
 fn test_text_draw() {
     use crate::prelude::*;
-    use crate::style::{TextAlignment, VerticalAlignment};
+    use crate::style::text_anchor::{HPos, Pos, VPos};
     use std::fs;
     use std::path::Path;
 
@@ -1412,22 +1413,8 @@ fn test_text_draw() {
     .iter()
     .enumerate()
     {
-        for (dy1, h_align) in [
-            TextAlignment::Left,
-            TextAlignment::Right,
-            TextAlignment::Center,
-        ]
-        .iter()
-        .enumerate()
-        {
-            for (dy2, v_align) in [
-                VerticalAlignment::Top,
-                VerticalAlignment::Middle,
-                VerticalAlignment::Bottom,
-            ]
-            .iter()
-            .enumerate()
-            {
+        for (dy1, h_align) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
+            for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
                 let x = 100 + dx as i32 * 300;
                 let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
                 root.draw(&crate::element::Rectangle::new(
@@ -1436,8 +1423,7 @@ fn test_text_draw() {
                 ))
                 .unwrap();
                 let style = TextStyle::from(("sans-serif", 20).into_font())
-                    .alignment(*h_align)
-                    .vertical_alignment(*v_align)
+                    .pos(Pos::new(*h_align, *v_align))
                     .transform(trans.clone());
                 root.draw_text("test", &style, (x, y)).unwrap();
             }

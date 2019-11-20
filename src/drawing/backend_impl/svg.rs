@@ -7,9 +7,8 @@ use svg::node::element::{Circle, Line, Polygon, Polyline, Rectangle, Text};
 use svg::Document;
 
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
-use crate::style::{
-    Color, FontStyle, FontTransform, RGBAColor, TextAlignment, TextStyle, VerticalAlignment,
-};
+use crate::style::text_anchor::HPos;
+use crate::style::{Color, FontStyle, FontTransform, RGBAColor, TextStyle};
 
 use std::io::{Cursor, Error};
 use std::path::Path;
@@ -258,10 +257,10 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         let y0 = pos.1 + offset.1;
 
         let max_x = (layout.1).0;
-        let (dx, anchor) = match style.alignment {
-            TextAlignment::Left => (0, "start"),
-            TextAlignment::Right => (max_x, "end"),
-            TextAlignment::Center => (max_x / 2, "middle"),
+        let (dx, anchor) = match style.pos.h_pos {
+            HPos::Left => (0, "start"),
+            HPos::Right => (max_x, "end"),
+            HPos::Center => (max_x / 2, "middle"),
         };
         let node = Text::new()
             .set("x", x0 + dx)
@@ -391,6 +390,7 @@ impl Drop for SVGBackend<'_> {
 mod test {
     use super::*;
     use crate::prelude::*;
+    use crate::style::text_anchor::{HPos, Pos, VPos};
     use std::fs;
     use std::path::Path;
 
@@ -435,14 +435,14 @@ mod test {
         {
             let mut root = SVGBackend::with_buffer(&mut buffer, (500, 500));
 
-            let style =
-                TextStyle::from(("sans-serif", 20).into_font()).alignment(TextAlignment::Right);
+            let style = TextStyle::from(("sans-serif", 20).into_font())
+                .pos(Pos::new(HPos::Right, VPos::Top));
             root.draw_text("right-align", &style, (150, 50)).unwrap();
 
-            let style = style.alignment(TextAlignment::Center);
+            let style = style.pos(Pos::new(HPos::Center, VPos::Top));
             root.draw_text("center-align", &style, (150, 150)).unwrap();
 
-            let style = style.alignment(TextAlignment::Left);
+            let style = style.pos(Pos::new(HPos::Left, VPos::Top));
             root.draw_text("left-align", &style, (150, 200)).unwrap();
         }
 
@@ -494,32 +494,18 @@ mod test {
             .iter()
             .enumerate()
             {
-                for (dy1, h_align) in [
-                    TextAlignment::Left,
-                    TextAlignment::Right,
-                    TextAlignment::Center,
-                ]
-                .iter()
-                .enumerate()
-                {
-                    for (dy2, v_align) in [
-                        VerticalAlignment::Top,
-                        VerticalAlignment::Middle,
-                        VerticalAlignment::Bottom,
-                    ]
-                    .iter()
-                    .enumerate()
+                for (dy1, h_align) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
+                    for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate()
                     {
                         let x = 100 + dx as i32 * 300;
                         let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
-                        root.draw(&crate::element::Rectangle::new(
-                            [(x, y), (x + 290, y + 90)],
+                        root.draw(&crate::element::Circle::new(
+                            (x, y), 3,
                             &BLACK.mix(0.5),
                         ))
                         .unwrap();
                         let style = TextStyle::from(("sans-serif", 20).into_font())
-                            .alignment(*h_align)
-                            .vertical_alignment(*v_align)
+                            .pos(Pos::new(*h_align, *v_align))
                             .transform(trans.clone());
                         root.draw_text("test", &style, (x, y)).unwrap();
                     }

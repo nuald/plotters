@@ -1,5 +1,6 @@
 use super::{FontData, FontDataInternal};
-use crate::style::{Color, LayoutBox, TextAlignment, TextStyle, VerticalAlignment};
+use crate::style::text_anchor::Pos;
+use crate::style::{Color, LayoutBox, TextStyle};
 
 use std::convert::From;
 
@@ -255,8 +256,7 @@ impl<'a> FontDesc<'a> {
         TextStyle {
             font: self.clone(),
             color: color.to_rgba(),
-            alignment: TextAlignment::Left,
-            vertical_alignment: VerticalAlignment::Bottom,
+            pos: Pos::default(),
         }
     }
 

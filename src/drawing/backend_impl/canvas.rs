@@ -3,7 +3,8 @@ use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
-use crate::style::{Color, FontTransform, RGBAColor, TextAlignment, TextStyle, VerticalAlignment};
+use crate::style::text_anchor::{HPos, Pos, VPos};
+use crate::style::{Color, FontTransform, RGBAColor, TextStyle};
 
 /// The backend that is drawing on the HTML canvas
 /// TODO: Support double buffering
@@ -361,22 +362,8 @@ mod test {
         .iter()
         .enumerate()
         {
-            for (dy1, h_align) in [
-                TextAlignment::Left,
-                TextAlignment::Right,
-                TextAlignment::Center,
-            ]
-            .iter()
-            .enumerate()
-            {
-                for (dy2, v_align) in [
-                    VerticalAlignment::Top,
-                    VerticalAlignment::Middle,
-                    VerticalAlignment::Bottom,
-                ]
-                .iter()
-                .enumerate()
-                {
+            for (dy1, h_align) in [HPos::Left, HPos::Right, HPos::Center].iter().enumerate() {
+                for (dy2, v_align) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
                     let x = 100 + dx as i32 * 300;
                     let y = 100_i32 + (dy1 as i32 * 3 + dy2 as i32) * 100;
                     root.draw(&crate::element::Rectangle::new(
@@ -385,8 +372,7 @@ mod test {
                     ))
                     .unwrap();
                     let style = TextStyle::from(("sans-serif", 20).into_font())
-                        .alignment(*h_align)
-                        .vertical_alignment(*v_align)
+                        .pos(Pos::new(*h_align, *v_align))
                         .transform(trans.clone());
                     root.draw_text("test", &style, (x, y)).unwrap();
                 }
