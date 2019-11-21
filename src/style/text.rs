@@ -3,6 +3,24 @@ use super::font::{FontDesc, FontFamily, FontStyle, FontTransform};
 use super::size::{HasDimension, SizeDesc};
 use super::BLACK;
 
+/// Text anchor attributes are used to properly position the text.
+///
+/// # Examples
+///
+/// In the example below, the text anchor (X) position is `Pos::new(HPos::Right, VPos::Center)`.
+/// ```text
+///    ***** X
+/// ```
+/// The position is always relative to the text regardless of its rotation.
+/// In the example below, the text has style
+/// `style.transform(FontTransform::Rotate90).pos(Pos::new(HPos::Center, VPos::Top))`.
+/// ```text
+///        *
+///        *
+///        * X
+///        *
+///        *
+/// ```
 pub mod text_anchor {
     /// The horizontal position of the anchor point relative to the text.
     #[derive(Clone, Copy)]

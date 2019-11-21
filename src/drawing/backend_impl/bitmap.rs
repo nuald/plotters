@@ -1437,6 +1437,10 @@ mod test {
             let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
             root.fill(&WHITE).unwrap();
 
+            let style = TextStyle::from(("sans-serif", 20).into_font())
+                .pos(Pos::new(HPos::Center, VPos::Top));
+            root.draw_text("CLIPPING", &style, (0, 0)).unwrap();
+
             let mut chart = ChartBuilder::on(&root)
                 .caption("All anchor point positions", ("sans-serif", 20))
                 .set_all_label_area_size(40)
