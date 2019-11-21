@@ -70,7 +70,7 @@ pub trait DrawingBackend: Sized {
     /// The error type reported by the backend
     type ErrorType: Error + Send + Sync;
 
-    /// Get the dimension of the drawing backend in pixel
+    /// Get the dimension of the drawing backend in pixels
     fn get_size(&self) -> (u32, u32);
 
     /// Ensure the backend is ready to draw
@@ -208,9 +208,15 @@ pub trait DrawingBackend: Sized {
             VPos::Bottom => 0,
         };
         let trans = font.get_transform();
+        let (w, h) = self.get_size();
         match font.draw(text, (0, 0), |x, y, v| {
             let (x, y) = trans.transform(x + dx, y + dy);
-            self.draw_pixel((pos.0 + x, pos.1 + y), &color.mix(f64::from(v)))
+            let (x, y) = (pos.0 + x, pos.1 + y);
+            if x >= 0 && x < w as i32 && y >= 0 && y < h as i32 {
+                self.draw_pixel((x, y), &color.mix(f64::from(v)))
+            } else {
+                Ok(())
+            }
         }) {
             Ok(drawing_result) => drawing_result,
             Err(font_error) => Err(DrawingErrorKind::FontError(font_error)),

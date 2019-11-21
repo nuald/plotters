@@ -486,10 +486,6 @@ mod test {
         {
             let root = SVGBackend::with_buffer(&mut buffer, (1000, 500)).into_drawing_area();
 
-            let style = TextStyle::from(("sans-serif", 20).into_font())
-                .pos(Pos::new(HPos::Center, VPos::Top));
-            root.draw_text("CLIPPING", &style, (0, 0)).unwrap();
-
             let mut chart = ChartBuilder::on(&root)
                 .caption("All anchor point positions", ("sans-serif", 20))
                 .set_all_label_area_size(40)
@@ -532,5 +528,36 @@ mod test {
         checked_save_file("test_text_draw", &content);
 
         assert_eq!(content.matches("test").count(), 36);
+    }
+
+    #[test]
+    fn test_text_clipping() {
+        let mut buffer: Vec<u8> = vec![];
+        {
+            let (width, height) = (500_i32, 500_i32);
+            let root = SVGBackend::with_buffer(&mut buffer, (width as u32, height as u32))
+                .into_drawing_area();
+
+            let style = TextStyle::from(("sans-serif", 20).into_font())
+                .pos(Pos::new(HPos::Center, VPos::Center));
+            root.draw_text("TOP LEFT", &style, (0, 0)).unwrap();
+            root.draw_text("TOP CENTER", &style, (width / 2, 0))
+                .unwrap();
+            root.draw_text("TOP RIGHT", &style, (width, 0)).unwrap();
+
+            root.draw_text("MIDDLE LEFT", &style, (0, height / 2))
+                .unwrap();
+            root.draw_text("MIDDLE RIGHT", &style, (width, height / 2))
+                .unwrap();
+
+            root.draw_text("BOTTOM LEFT", &style, (0, height)).unwrap();
+            root.draw_text("BOTTOM CENTER", &style, (width / 2, height))
+                .unwrap();
+            root.draw_text("BOTTOM RIGHT", &style, (width, height))
+                .unwrap();
+        }
+
+        let content = String::from_utf8(buffer).unwrap();
+        checked_save_file("test_text_clipping", &content);
     }
 }
