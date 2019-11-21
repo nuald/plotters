@@ -560,4 +560,63 @@ mod test {
         let content = String::from_utf8(buffer).unwrap();
         checked_save_file("test_text_clipping", &content);
     }
+
+    #[test]
+    fn test_series_labels() {
+        let mut buffer: Vec<u8> = vec![];
+        {
+            let (width, height) = (500, 500);
+            let root = SVGBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
+
+            let mut chart = ChartBuilder::on(&root)
+                .caption("All series label positions", ("sans-serif", 20))
+                .set_all_label_area_size(40)
+                .build_ranged(0..50, 0..50)
+                .unwrap();
+
+            chart
+                .configure_mesh()
+                .disable_x_mesh()
+                .disable_y_mesh()
+                .draw()
+                .unwrap();
+
+            chart
+                .draw_series(std::iter::once(Circle::new((5, 15), 5, &RED)))
+                .expect("Drawing error")
+                .label("Series 1")
+                .legend(|(x, y)| Circle::new((x, y), 3, RED.filled()));
+
+            chart
+                .draw_series(std::iter::once(Circle::new((5, 15), 10, &BLUE)))
+                .expect("Drawing error")
+                .label("Series 2")
+                .legend(|(x, y)| Circle::new((x, y), 3, BLUE.filled()));
+
+            for pos in vec![
+                SeriesLabelPosition::UpperLeft,
+                SeriesLabelPosition::MiddleLeft,
+                SeriesLabelPosition::LowerLeft,
+                SeriesLabelPosition::UpperMiddle,
+                SeriesLabelPosition::MiddleMiddle,
+                SeriesLabelPosition::LowerMiddle,
+                SeriesLabelPosition::UpperRight,
+                SeriesLabelPosition::MiddleRight,
+                SeriesLabelPosition::LowerRight,
+                SeriesLabelPosition::Coordinate(70, 70),
+            ]
+            .into_iter()
+            {
+                chart
+                    .configure_series_labels()
+                    .border_style(&BLACK.mix(0.5))
+                    .position(pos)
+                    .draw()
+                    .expect("Drawing error");
+            }
+        }
+
+        let content = String::from_utf8(buffer).unwrap();
+        checked_save_file("test_series_labels", &content);
+    }
 }

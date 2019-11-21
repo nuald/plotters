@@ -425,18 +425,85 @@ mod test {
         let style = TextStyle::from(("sans-serif", 20).into_font())
             .pos(Pos::new(HPos::Center, VPos::Center));
         root.draw_text("TOP LEFT", &style, (0, 0)).unwrap();
-        root.draw_text("TOP CENTER", &style, (width / 2, 0)).unwrap();
+        root.draw_text("TOP CENTER", &style, (width / 2, 0))
+            .unwrap();
         root.draw_text("TOP RIGHT", &style, (width, 0)).unwrap();
 
-        root.draw_text("MIDDLE LEFT", &style, (0, height / 2)).unwrap();
-        root.draw_text("MIDDLE RIGHT", &style, (width, height / 2)).unwrap();
+        root.draw_text("MIDDLE LEFT", &style, (0, height / 2))
+            .unwrap();
+        root.draw_text("MIDDLE RIGHT", &style, (width, height / 2))
+            .unwrap();
 
         root.draw_text("BOTTOM LEFT", &style, (0, height)).unwrap();
-        root.draw_text("BOTTOM CENTER", &style, (width / 2, height)).unwrap();
-        root.draw_text("BOTTOM RIGHT", &style, (width, height)).unwrap();
+        root.draw_text("BOTTOM CENTER", &style, (width / 2, height))
+            .unwrap();
+        root.draw_text("BOTTOM RIGHT", &style, (width, height))
+            .unwrap();
 
         let buffer = *surface.finish_output_stream().unwrap().downcast().unwrap();
         let content = String::from_utf8(buffer).unwrap();
         checked_save_file("test_text_clipping", &content);
+    }
+
+    #[test]
+    fn test_series_labels() {
+        let buffer: Vec<u8> = vec![];
+        let (width, height) = (500, 500);
+        let surface = cairo::PsSurface::for_stream(width.into(), height.into(), buffer);
+        let cr = CairoContext::new(&surface);
+        let root = CairoBackend::new(&cr, (width, height))
+            .unwrap()
+            .into_drawing_area();
+
+        let mut chart = ChartBuilder::on(&root)
+            .caption("All series label positions", ("sans-serif", 20))
+            .set_all_label_area_size(40)
+            .build_ranged(0..50, 0..50)
+            .unwrap();
+
+        chart
+            .configure_mesh()
+            .disable_x_mesh()
+            .disable_y_mesh()
+            .draw()
+            .unwrap();
+
+        chart
+            .draw_series(std::iter::once(Circle::new((5, 15), 5, &RED)))
+            .expect("Drawing error")
+            .label("Series 1")
+            .legend(|(x, y)| Circle::new((x, y), 3, RED.filled()));
+
+        chart
+            .draw_series(std::iter::once(Circle::new((5, 15), 10, &BLUE)))
+            .expect("Drawing error")
+            .label("Series 2")
+            .legend(|(x, y)| Circle::new((x, y), 3, BLUE.filled()));
+
+        for pos in vec![
+            SeriesLabelPosition::UpperLeft,
+            SeriesLabelPosition::MiddleLeft,
+            SeriesLabelPosition::LowerLeft,
+            SeriesLabelPosition::UpperMiddle,
+            SeriesLabelPosition::MiddleMiddle,
+            SeriesLabelPosition::LowerMiddle,
+            SeriesLabelPosition::UpperRight,
+            SeriesLabelPosition::MiddleRight,
+            SeriesLabelPosition::LowerRight,
+            SeriesLabelPosition::Coordinate(70, 70),
+        ]
+        .into_iter()
+        {
+            chart
+                .configure_series_labels()
+                .border_style(&BLACK.mix(0.5))
+                .position(pos)
+                .draw()
+                .expect("Drawing error");
+        }
+
+        let buffer = *surface.finish_output_stream().unwrap().downcast().unwrap();
+        let content = String::from_utf8(buffer).unwrap();
+        checked_save_file("test_series_labels", &content);
     }
 }
