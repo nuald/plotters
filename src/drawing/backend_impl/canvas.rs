@@ -304,22 +304,24 @@ mod test {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    fn create_canvas(document: &Document, width: u32, height: u32) -> HtmlCanvasElement {
+    fn create_canvas(document: &Document, id: &str, width: u32, height: u32) -> HtmlCanvasElement {
         let canvas = document
             .create_element("canvas")
             .unwrap()
             .dyn_into::<HtmlCanvasElement>()
             .unwrap();
-        document.body().unwrap().append_child(&canvas).unwrap();
-        canvas.set_attribute("id", "canvas-id").unwrap();
+        let div = document.create_element("div").unwrap();
+        div.append_child(&canvas).unwrap();
+        document.body().unwrap().append_child(&div).unwrap();
+        canvas.set_attribute("id", id).unwrap();
         canvas.set_width(width);
         canvas.set_height(height);
         canvas
     }
 
-    fn check_content(document: &Document) {
+    fn check_content(document: &Document, id: &str) {
         let canvas = document
-            .get_element_by_id("canvas-id")
+            .get_element_by_id(id)
             .unwrap()
             .dyn_into::<HtmlCanvasElement>()
             .unwrap();
@@ -328,40 +330,48 @@ mod test {
         assert!(&data_uri.starts_with(prefix));
     }
 
-    #[wasm_bindgen_test]
-    fn test_draw_mesh() {
+    fn draw_mesh_with_custom_ticks(tick_size: i32, test_name: &str) {
         let document = window().unwrap().document().unwrap();
-        let canvas = create_canvas(&document, 500, 500);
+        let canvas = create_canvas(&document, test_name, 500, 500);
         let backend = CanvasBackend::with_canvas_object(canvas).expect("cannot find canvas");
         let root = backend.into_drawing_area();
 
         let mut chart = ChartBuilder::on(&root)
-            .caption("This is a test", ("sans-serif", 10))
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            .build_ranged(-1f32..1f32, -1.2f32..1.2f32)
+            .caption("This is a test", ("sans-serif", 20))
+            .set_all_label_area_size(40)
+            .build_ranged(0..10, 0..10)
             .unwrap();
 
         chart
             .configure_mesh()
-            .x_labels(3)
-            .y_labels(3)
+            .set_all_tick_mark_size(tick_size)
             .draw()
             .unwrap();
-        check_content(&document);
+
+        check_content(&document, test_name);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_draw_mesh_no_ticks() {
+        draw_mesh_with_custom_ticks(0, "test_draw_mesh_no_ticks");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_draw_mesh_negative_ticks() {
+        draw_mesh_with_custom_ticks(-10, "test_draw_mesh_negative_ticks");
     }
 
     #[wasm_bindgen_test]
     fn test_text_draw() {
         let document = window().unwrap().document().unwrap();
-        let canvas = create_canvas(&document, 1000, 500);
+        let canvas = create_canvas(&document, "test_text_draw", 1000, 500);
         let backend = CanvasBackend::with_canvas_object(canvas).expect("cannot find canvas");
         let root = backend.into_drawing_area();
 
         let mut chart = ChartBuilder::on(&root)
             .caption("All anchor point positions", ("sans-serif", 20))
             .set_all_label_area_size(40)
-            .build_ranged(0..140, 0..110)
+            .build_ranged(0..100, 0..50)
             .unwrap();
 
         chart
@@ -394,6 +404,6 @@ mod test {
                 }
             }
         }
-        check_content(&document);
+        check_content(&document, "test_text_draw");
     }
 }

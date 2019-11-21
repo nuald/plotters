@@ -411,26 +411,38 @@ mod test {
         fs::write(file_path, &content).unwrap();
     }
 
-    #[test]
-    fn test_draw_mesh() {
+    fn draw_mesh_with_custom_ticks(tick_size: i32, test_name: &str) {
         let mut buffer: Vec<u8> = vec![];
         {
             let root = SVGBackend::with_buffer(&mut buffer, (500, 500)).into_drawing_area();
 
             let mut chart = ChartBuilder::on(&root)
                 .caption("This is a test", ("sans-serif", 20))
-                .x_label_area_size(40)
-                .y_label_area_size(40)
-                .build_ranged(0..100, 0..100)
+                .set_all_label_area_size(40)
+                .build_ranged(0..10, 0..10)
                 .unwrap();
 
-            chart.configure_mesh().draw().unwrap();
+            chart
+                .configure_mesh()
+                .set_all_tick_mark_size(tick_size)
+                .draw()
+                .unwrap();
         }
 
         let content = String::from_utf8(buffer).unwrap();
-        checked_save_file("test_draw_mesh", &content);
+        checked_save_file(test_name, &content);
 
         assert!(content.contains("This is a test"));
+    }
+
+    #[test]
+    fn test_draw_mesh_no_ticks() {
+        draw_mesh_with_custom_ticks(0, "test_draw_mesh_no_ticks");
+    }
+
+    #[test]
+    fn test_draw_mesh_negative_ticks() {
+        draw_mesh_with_custom_ticks(-10, "test_draw_mesh_negative_ticks");
     }
 
     #[test]
@@ -477,7 +489,7 @@ mod test {
             let mut chart = ChartBuilder::on(&root)
                 .caption("All anchor point positions", ("sans-serif", 20))
                 .set_all_label_area_size(40)
-                .build_ranged(0..140, 0..110)
+                .build_ranged(0..100, 0..50)
                 .unwrap();
 
             chart

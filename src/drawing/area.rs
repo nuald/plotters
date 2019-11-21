@@ -473,15 +473,11 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
     ) -> Result<Self, DrawingAreaError<DB>> {
         let style = style.into();
 
-        let (text_w, text_h) = self.estimate_text_size(text, &style.font)?;
+        let x_padding = (self.rect.x1 - self.rect.x0) / 2;
 
-        let x_padding = if self.rect.x1 - self.rect.x0 > text_w as i32 {
-            (self.rect.x1 - self.rect.x0 - text_w as i32) / 2
-        } else {
-            0
-        };
+        let text_h = style.font.get_size() as i32;
+        let y_padding = (text_h / 2).min(5);
 
-        let y_padding = (text_h / 2).min(5) as i32;
         let style = &style.pos(Pos::new(HPos::Center, VPos::Top));
 
         self.backend_ops(|b| {

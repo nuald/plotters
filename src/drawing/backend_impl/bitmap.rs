@@ -1397,6 +1397,38 @@ mod test {
         img.save(&file_path).unwrap();
     }
 
+    fn draw_mesh_with_custom_ticks(tick_size: i32, test_name: &str) {
+        let (width, height) = (500, 500);
+        let mut buffer = vec![0; (width * height * 3) as usize];
+        {
+            let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
+            root.fill(&WHITE).unwrap();
+
+            let mut chart = ChartBuilder::on(&root)
+                .caption("This is a test", ("sans-serif", 20))
+                .set_all_label_area_size(40)
+                .build_ranged(0..10, 0..10)
+                .unwrap();
+
+            chart
+                .configure_mesh()
+                .set_all_tick_mark_size(tick_size)
+                .draw()
+                .unwrap();
+        }
+        checked_save_file(test_name, &buffer, width, height);
+    }
+
+    #[test]
+    fn test_draw_mesh_no_ticks() {
+        draw_mesh_with_custom_ticks(0, "test_draw_mesh_no_ticks");
+    }
+
+    #[test]
+    fn test_draw_mesh_negative_ticks() {
+        draw_mesh_with_custom_ticks(-10, "test_draw_mesh_negative_ticks");
+    }
+
     #[test]
     fn test_text_draw() {
         let (width, height) = (1000, 500);
@@ -1408,7 +1440,7 @@ mod test {
             let mut chart = ChartBuilder::on(&root)
                 .caption("All anchor point positions", ("sans-serif", 20))
                 .set_all_label_area_size(40)
-                .build_ranged(0..140, 0..110)
+                .build_ranged(0..100, 0..50)
                 .unwrap();
 
             chart
