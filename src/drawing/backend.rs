@@ -1,3 +1,4 @@
+use crate::style::text_anchor::{HPos, VPos};
 use crate::style::{Color, FontDesc, FontError, RGBAColor, ShapeStyle, TextStyle};
 use std::error::Error;
 
@@ -191,8 +192,25 @@ pub trait DrawingBackend: Sized {
             return Ok(());
         }
 
-        match font.draw(text, (pos.0, pos.1), |x, y, v| {
-            self.draw_pixel((x as i32, y as i32), &color.mix(f64::from(v)))
+        let layout = font.layout_box(text).unwrap();
+        let (width, height) = (
+            ((layout.0).0 - (layout.1).0).abs(),
+            ((layout.0).1 - (layout.1).1).abs(),
+        );
+        let dx = match style.pos.h_pos {
+            HPos::Left => 0,
+            HPos::Right => -width,
+            HPos::Center => -width / 2,
+        };
+        let dy = match style.pos.v_pos {
+            VPos::Top => height,
+            VPos::Center => height / 2,
+            VPos::Bottom => 0,
+        };
+        let trans = font.get_transform();
+        match font.draw(text, (0, 0), |x, y, v| {
+            let (x, y) = trans.transform(x + dx, y + dy);
+            self.draw_pixel((pos.0 + x, pos.1 + y), &color.mix(f64::from(v)))
         }) {
             Ok(drawing_result) => drawing_result,
             Err(font_error) => Err(DrawingErrorKind::FontError(font_error)),

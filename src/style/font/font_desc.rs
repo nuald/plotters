@@ -303,7 +303,7 @@ impl<'a> FontDesc<'a> {
         draw: DrawFunc,
     ) -> FontResult<Result<(), E>> {
         match &self.data {
-            Ok(ref font) => font.draw((x, y), self.size, text, self.get_transform(), draw),
+            Ok(ref font) => font.draw((x, y), self.size, text, draw),
             Err(e) => Err(e.clone()),
         }
     }
