@@ -3,7 +3,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
-use crate::style::text_anchor::{HPos, Pos, VPos};
+use crate::style::text_anchor::{HPos, VPos};
 use crate::style::{Color, FontTransform, RGBAColor, TextStyle};
 
 /// The backend that is drawing on the HTML canvas
@@ -298,6 +298,7 @@ mod test {
     use super::*;
     use crate::element::Circle;
     use crate::prelude::*;
+    use crate::style::text_anchor::Pos;
     use wasm_bindgen_test::wasm_bindgen_test_configure;
     use wasm_bindgen_test::*;
     use web_sys::Document;

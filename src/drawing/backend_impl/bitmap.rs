@@ -231,6 +231,11 @@ pub trait PixelFormat: Sized {
                         *buf.get_unchecked_mut(base + idx) = Self::byte_at(r, g, b, 0, idx);
                     }
                 } else {
+                    let alpha = alpha.min(1.0).max(0.0);
+                    if alpha == 0.0 {
+                        return;
+                    }
+
                     let alpha = (alpha * 256.0).floor() as u64;
                     for idx in 0..Self::EFFECTIVE_PIXEL_SIZE {
                         blend(
