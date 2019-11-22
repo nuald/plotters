@@ -1,5 +1,5 @@
 use crate::style::text_anchor::{HPos, VPos};
-use crate::style::{Color, FontDesc, FontError, RGBAColor, ShapeStyle, TextStyle};
+use crate::style::{Color, FontError, RGBAColor, ShapeStyle, TextStyle};
 use std::error::Error;
 
 /// A coordinate in the image
@@ -221,22 +221,6 @@ pub trait DrawingBackend: Sized {
             Ok(drawing_result) => drawing_result,
             Err(font_error) => Err(DrawingErrorKind::FontError(font_error)),
         }
-    }
-
-    /// Estimate the size of the text if rendered on this backend.
-    /// This is important because some of the backend may not have font ability.
-    /// Thus this allows those backend reports proper value rather than ask the
-    /// font rasterizer for that.
-    ///
-    /// - `text`: The text to estimate
-    /// - `font`: The font to estimate
-    /// - *Returns* The estimated text size
-    fn estimate_text_size<'a>(
-        &self,
-        text: &str,
-        font: &FontDesc<'a>,
-    ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
-        Ok(font.box_size(text).map_err(DrawingErrorKind::FontError)?)
     }
 
     /// Blit a bitmap on to the backend.
