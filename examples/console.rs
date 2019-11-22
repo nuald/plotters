@@ -117,6 +117,14 @@ impl DrawingBackend for TextDrawingBackend {
         plotters::drawing::rasterizer::draw_line(self, from, to, style)
     }
 
+    fn estimate_text_size<'a>(
+        &self,
+        text: &str,
+        _font: &FontDesc<'a>,
+    ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
+        Ok((text.len() as u32, 1))
+    }
+
     fn draw_text(
         &mut self,
         text: &str,
