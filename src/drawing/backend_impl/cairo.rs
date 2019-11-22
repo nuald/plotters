@@ -4,7 +4,7 @@ use cairo::{Context as CairoContext, FontSlant, FontWeight, Status as CairoStatu
 use crate::drawing::backend::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 use crate::style::text_anchor::{HPos, VPos};
 #[allow(unused_imports)]
-use crate::style::{Color, FontStyle, FontTransform, RGBAColor, TextStyle};
+use crate::style::{Color, FontDesc, FontStyle, FontTransform, RGBAColor, TextStyle};
 
 /// The drawing backend that is backed with a Cairo context
 pub struct CairoBackend<'a> {
@@ -26,14 +26,28 @@ impl std::fmt::Display for CairoError {
 impl std::error::Error for CairoError {}
 
 impl<'a> CairoBackend<'a> {
-    fn call_cairo<F: Fn(&CairoContext)>(&self, f: F) -> Result<(), DrawingErrorKind<CairoError>> {
-        f(self.context);
-        if self.context.status() == CairoStatus::Success {
-            return Ok(());
+    /// Call cairo functions and verify the cairo status afterward.
+    ///
+    /// All major cairo objects retain an error status internally
+    /// which can be queried anytime by the users using status() method.
+    /// In the mean time, it is safe to call all cairo functions normally even
+    /// if the underlying object is in an error status.
+    /// This means that no error handling code is required before or after
+    /// each individual cairo function call.
+    ///
+    /// - `f`: The function to call
+    /// - *Returns* The wrapped result of the function
+    fn call_cairo<T, F: Fn(&CairoContext) -> T>(
+        &self,
+        f: F,
+    ) -> Result<T, DrawingErrorKind<CairoError>> {
+        let result = f(self.context);
+        let status = self.context.status();
+        if status == CairoStatus::Success {
+            Ok(result)
+        } else {
+            Err(DrawingErrorKind::DrawingError(CairoError(status)))
         }
-        Err(DrawingErrorKind::DrawingError(CairoError(
-            self.context.status(),
-        )))
     }
 
     fn set_color(&self, color: &RGBAColor) -> Result<(), DrawingErrorKind<CairoError>> {
@@ -44,13 +58,11 @@ impl<'a> CairoBackend<'a> {
                 f64::from(color.rgb().2) / 255.0,
                 f64::from(color.alpha()),
             )
-        })?;
-        Ok(())
+        })
     }
 
     fn set_stroke_width(&self, width: u32) -> Result<(), DrawingErrorKind<CairoError>> {
-        self.call_cairo(|c| c.set_line_width(f64::from(width)))?;
-        Ok(())
+        self.call_cairo(|c| c.set_line_width(f64::from(width)))
     }
 
     pub fn new(context: &'a CairoContext, (w, h): (u32, u32)) -> Result<Self, CairoError> {
@@ -73,8 +85,8 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         if !self.init_flag {
-            let (x0, y0, x1, y1) = self.context.clip_extents();
             self.call_cairo(|c| {
+                let (x0, y0, x1, y1) = c.clip_extents();
                 c.scale(
                     (x1 - x0) / f64::from(self.width),
                     (y1 - y0) / f64::from(self.height),
@@ -94,17 +106,16 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         point: BackendCoord,
         color: &RGBAColor,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        self.call_cairo(|c| c.rectangle(f64::from(point.0), f64::from(point.1), 1.0, 1.0))?;
         self.call_cairo(|c| {
+            c.rectangle(f64::from(point.0), f64::from(point.1), 1.0, 1.0);
             c.set_source_rgba(
                 f64::from(color.rgb().0) / 255.0,
                 f64::from(color.rgb().1) / 255.0,
                 f64::from(color.rgb().2) / 255.0,
                 f64::from(color.alpha()),
-            )
-        })?;
-        self.call_cairo(|c| c.fill())?;
-        Ok(())
+            );
+            c.fill();
+        })
     }
 
     fn draw_line<S: BackendStyle>(
@@ -113,14 +124,14 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         to: BackendCoord,
         style: &S,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        self.call_cairo(|c| c.move_to(f64::from(from.0), f64::from(from.1)))?;
-
         self.set_color(&style.as_color())?;
         self.set_stroke_width(style.stroke_width())?;
 
-        self.call_cairo(|c| c.line_to(f64::from(to.0), f64::from(to.1)))?;
-        self.call_cairo(|c| c.stroke())?;
-        Ok(())
+        self.call_cairo(|c| {
+            c.move_to(f64::from(from.0), f64::from(from.1));
+            c.line_to(f64::from(to.0), f64::from(to.1));
+            c.stroke();
+        })
     }
 
     fn draw_rect<S: BackendStyle>(
@@ -139,16 +150,13 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
                 f64::from(upper_left.1),
                 f64::from(bottom_right.0 - upper_left.0),
                 f64::from(bottom_right.1 - upper_left.1),
-            )
-        })?;
-
-        if fill {
-            self.call_cairo(|c| c.fill())?;
-        } else {
-            self.call_cairo(|c| c.stroke())?;
-        }
-
-        Ok(())
+            );
+            if fill {
+                c.fill();
+            } else {
+                c.stroke();
+            }
+        })
     }
 
     fn draw_path<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
@@ -160,7 +168,6 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         self.set_stroke_width(style.stroke_width())?;
 
         let mut path = path.into_iter();
-
         if let Some((x, y)) = path.next() {
             self.call_cairo(|c| c.move_to(f64::from(x), f64::from(y)))?;
         }
@@ -169,9 +176,7 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
             self.call_cairo(|c| c.line_to(f64::from(x), f64::from(y)))?;
         }
 
-        self.call_cairo(|c| c.stroke())?;
-
-        Ok(())
+        self.call_cairo(|c| c.stroke())
     }
 
     fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
@@ -186,18 +191,18 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
 
         if let Some((x, y)) = path.next() {
             self.call_cairo(|c| c.move_to(f64::from(x), f64::from(y)))?;
+
+            for (x, y) in path {
+                self.call_cairo(|c| c.line_to(f64::from(x), f64::from(y)))?;
+            }
+
+            self.call_cairo(|c| {
+                c.close_path();
+                c.fill();
+            })
         } else {
-            return Ok(());
+            Ok(())
         }
-
-        for (x, y) in path {
-            self.call_cairo(|c| c.line_to(f64::from(x), f64::from(y)))?;
-        }
-
-        self.call_cairo(|c| c.close_path())?;
-        self.call_cairo(|c| c.fill())?;
-
-        Ok(())
     }
 
     fn draw_circle<S: BackendStyle>(
@@ -210,23 +215,33 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
         self.set_color(&style.as_color())?;
         self.set_stroke_width(style.stroke_width())?;
 
-        self.call_cairo(|c| c.new_sub_path())?;
         self.call_cairo(|c| {
+            c.new_sub_path();
             c.arc(
                 f64::from(center.0),
                 f64::from(center.1),
                 f64::from(radius),
                 0.0,
                 std::f64::consts::PI * 2.0,
-            )
-        })?;
+            );
 
-        if fill {
-            self.call_cairo(|c| c.fill())?;
-        } else {
-            self.call_cairo(|c| c.stroke())?;
-        }
-        Ok(())
+            if fill {
+                c.fill();
+            } else {
+                c.stroke();
+            }
+        })
+    }
+
+    fn estimate_text_size<'b>(
+        &self,
+        text: &str,
+        _font: &FontDesc<'b>,
+    ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
+        self.call_cairo(|c| {
+            let extents = c.text_extents(text);
+            (extents.width as u32, extents.height as u32)
+        })
     }
 
     fn draw_text(
@@ -248,51 +263,65 @@ impl<'a> DrawingBackend for CairoBackend<'a> {
             * std::f64::consts::PI;
 
         if degree != 0.0 {
-            self.call_cairo(|c| c.save())?;
-            self.call_cairo(|c| c.translate(f64::from(x), f64::from(y)))?;
-            self.call_cairo(|c| c.rotate(degree))?;
+            self.call_cairo(|c| {
+                c.save();
+                c.translate(f64::from(x), f64::from(y));
+                c.rotate(degree);
+            })?;
             x = 0;
             y = 0;
         }
 
-        self.call_cairo(|c| match font.get_style() {
-            FontStyle::Normal => {
-                c.select_font_face(font.get_name(), FontSlant::Normal, FontWeight::Normal)
-            }
-            FontStyle::Bold => {
-                c.select_font_face(font.get_name(), FontSlant::Normal, FontWeight::Bold)
-            }
-            FontStyle::Oblique => {
-                c.select_font_face(font.get_name(), FontSlant::Oblique, FontWeight::Normal)
-            }
-            FontStyle::Italic => {
-                c.select_font_face(font.get_name(), FontSlant::Italic, FontWeight::Normal)
-            }
-        })?;
         let actual_size = font.get_size();
-        self.call_cairo(|c| c.set_font_size(actual_size))?;
+        self.call_cairo(|c| {
+            match font.get_style() {
+                FontStyle::Normal => {
+                    c.select_font_face(font.get_name(), FontSlant::Normal, FontWeight::Normal)
+                }
+                FontStyle::Bold => {
+                    c.select_font_face(font.get_name(), FontSlant::Normal, FontWeight::Bold)
+                }
+                FontStyle::Oblique => {
+                    c.select_font_face(font.get_name(), FontSlant::Oblique, FontWeight::Normal)
+                }
+                FontStyle::Italic => {
+                    c.select_font_face(font.get_name(), FontSlant::Italic, FontWeight::Normal)
+                }
+            };
+            c.set_font_size(actual_size);
+        })?;
         self.set_color(&color)?;
 
+        let (width, height) = self.estimate_text_size(text, &style.font)?;
+        let (width, height) = (width as f64, height as f64);
         self.call_cairo(|c| {
-            let extents = c.text_extents(text);
+            // let extents = c.text_extents(text);
+            // let dx = match style.pos.h_pos {
+            //     HPos::Left => 0.0,
+            //     HPos::Right => -(extents.width + extents.x_bearing),
+            //     HPos::Center => -(extents.width / 2.0 + extents.x_bearing),
+            // };
+            // let dy = match style.pos.v_pos {
+            //     VPos::Top => extents.height,
+            //     VPos::Center => extents.height / 2.0,
+            //     VPos::Bottom => 0.0,
+            // };
             let dx = match style.pos.h_pos {
                 HPos::Left => 0.0,
-                HPos::Right => -(extents.width + extents.x_bearing),
-                HPos::Center => -(extents.width / 2.0 + extents.x_bearing),
+                HPos::Right => -width,
+                HPos::Center => -width / 2.0,
             };
             let dy = match style.pos.v_pos {
-                VPos::Top => extents.height,
-                VPos::Center => extents.height / 2.0,
+                VPos::Top => height,
+                VPos::Center => height / 2.0,
                 VPos::Bottom => 0.0,
             };
             c.move_to(f64::from(x) + dx, f64::from(y) + dy);
-        })?;
-        self.call_cairo(|c| c.show_text(text))?;
-
-        if degree != 0.0 {
-            self.call_cairo(|c| c.restore())?;
-        }
-        Ok(())
+            c.show_text(text);
+            if degree != 0.0 {
+                c.restore();
+            }
+        })
     }
 }
 

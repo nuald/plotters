@@ -475,8 +475,8 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
 
         let x_padding = (self.rect.x1 - self.rect.x0) / 2;
 
-        let text_h = style.font.get_size() as i32;
-        let y_padding = (text_h / 2).min(5);
+        let (_, text_h) = self.estimate_text_size(text, &style.font)?;
+        let y_padding = (text_h / 2).min(5) as i32;
 
         let style = &style.pos(Pos::new(HPos::Center, VPos::Top));
 

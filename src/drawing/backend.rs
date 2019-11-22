@@ -192,11 +192,8 @@ pub trait DrawingBackend: Sized {
             return Ok(());
         }
 
-        let layout = font.layout_box(text).unwrap();
-        let (width, height) = (
-            ((layout.0).0 - (layout.1).0).abs(),
-            ((layout.0).1 - (layout.1).1).abs(),
-        );
+        let (width, height) = self.estimate_text_size(text, &style.font)?;
+        let (width, height) = (width as i32, height as i32);
         let dx = match style.pos.h_pos {
             HPos::Left => 0,
             HPos::Right => -width,
@@ -223,7 +220,7 @@ pub trait DrawingBackend: Sized {
         }
     }
 
-    /// Estimate the size of the text if rendered on this backend.
+    /// Estimate the size of the horizontal text if rendered on this backend.
     /// This is important because some of the backend may not have font ability.
     /// Thus this allows those backend reports proper value rather than ask the
     /// font rasterizer for that.
@@ -236,7 +233,11 @@ pub trait DrawingBackend: Sized {
         text: &str,
         font: &FontDesc<'a>,
     ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
-        Ok(font.box_size(text).map_err(DrawingErrorKind::FontError)?)
+        let layout = font.layout_box(text).map_err(DrawingErrorKind::FontError)?;
+        Ok((
+            ((layout.0).0 - (layout.1).0).abs() as u32,
+            ((layout.0).1 - (layout.1).1).abs() as u32,
+        ))
     }
 
     /// Blit a bitmap on to the backend.

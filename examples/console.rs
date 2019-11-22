@@ -131,7 +131,8 @@ impl DrawingBackend for TextDrawingBackend {
         style: &TextStyle,
         pos: (i32, i32),
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let (width, height) = (text.len() as i32, 1);
+        let (width, height) = self.estimate_text_size(text, &style.font)?;
+        let (width, height) = (width as i32, height as i32);
         let dx = match style.pos.h_pos {
             HPos::Left => 0,
             HPos::Right => -width,
