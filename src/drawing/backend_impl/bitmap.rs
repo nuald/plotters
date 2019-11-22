@@ -320,6 +320,7 @@ impl PixelFormat for RGBPixel {
 
         // Since we should always make sure the RGB payload occupies the logic lower bits
         // thus, this type purning should work for both LE and BE CPUs
+        #[rustfmt::skip]
         let (p1, p2, p3): (u64, u64, u64) = unsafe {
             std::mem::transmute([
                 u16::from(r),
@@ -337,6 +338,7 @@ impl PixelFormat for RGBPixel {
             ])
         };
 
+        #[rustfmt::skip]
         let (q1, q2, q3): (u64, u64, u64) = unsafe {
             std::mem::transmute([
                 u16::from(g),
@@ -555,6 +557,7 @@ impl PixelFormat for BGRXPixel {
 
         // Since we should always make sure the RGB payload occupies the logic lower bits
         // thus, this type purning should work for both LE and BE CPUs
+        #[rustfmt::skip]
         let p: u64 = unsafe {
             std::mem::transmute([
                 u16::from(b),
@@ -564,6 +567,7 @@ impl PixelFormat for BGRXPixel {
             ])
         };
 
+        #[rustfmt::skip]
         let q: u64 = unsafe {
             std::mem::transmute([
                 u16::from(g),
@@ -891,6 +895,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
             }
             Target::Buffer(_) => Ok(()),
 
+            #[cfg(all(feature = "gif", not(target_arch = "wasm32"), feature = "image"))]
             Target::Gif(target) => {
                 target
                     .flush_frame(self.buffer.borrow_buffer())
